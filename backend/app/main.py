@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,12 +12,21 @@ from .products.api.product_image import router as product_image_router
 from .products.api.variation import router as variation_router
 from .products.api.variation_option import router as variation_options_router
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    create_db_and_tables()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
 app = FastAPI()
 
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://shop.vinlaro.com",
+    "https://webbfarstun.shop",
 ]
 
 app.add_middleware(
@@ -32,11 +43,6 @@ app.include_router(product_group_router)
 app.include_router(variation_router)
 app.include_router(variation_options_router)
 app.include_router(product_image_router)
-
-
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
 
 
 @app.get("/")
