@@ -30,7 +30,11 @@
             in
             {
                 devShells.default = pkgs.mkShell {
-                    packages = [ pythonEnv ];
+                    packages = [
+                        pythonEnv
+                        pkgs.nodejs_24
+                        pkgs.nodePackages.pnpm
+                    ];
                     shellHook = "export NIX_SHELL_NAME='webbfarstun'";
                 };
             }

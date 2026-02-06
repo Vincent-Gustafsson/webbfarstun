@@ -26,6 +26,15 @@ services:
             - "5050:5050"
         depends_on:
             - db
+    frontend:
+        build: ./frontend
+        ports:
+            - "5173:5173"
+        volumes:
+            - ./frontend:/app
+            - /app/node_modules
+        depends_on:
+            - web
     tunnel:
         image: cloudflare/cloudflared:latest
         container_name: my-tunnel
