@@ -1,0 +1,60 @@
+name: CI/CD Pipeline (Frontend)
+
+on:
+    push:
+        branches: ["master"]
+        paths:
+            - "frontend/**"
+            - ".github/workflows/ci-cd-frontend.yaml"
+
+jobs:
+    deploy:
+        name: Build & Deploy Frontend
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            # --- BUILD VUE APP ---
+            - name: Set up Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: "npm"
+
+            - name: Install and Build
+              run: |
+                  npm ci
+                  npm run build
+
+            # --- PREPARE TUNNEL ---
+            - name: Install cloudflared
+              run: |
+                  curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+                  sudo dpkg -i cloudflared.deb
+
+            - name: Setup SSH Key
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+                  chmod 600 ~/.ssh/id_ed25519
+
+            - name: Configure SSH Proxy
+              run: |
+                  echo "Host vm_via_tunnel" >> ~/.ssh/config
+                  echo "  HostName ${{ secrets.VM_HOSTNAME }}" >> ~/.ssh/config
+                  echo "  User ${{ secrets.USERNAME }}" >> ~/.ssh/config
+                  echo "  IdentityFile ~/.ssh/id_ed25519" >> ~/.ssh/config
+                  echo "  ProxyCommand /usr/bin/cloudflared access ssh --hostname %h --id ${{ secrets.CF_ACCESS_CLIENT_ID }} --secret ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" >> ~/.ssh/config
+                  echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+
+            # --- DEPLOY ---
+            - name: Rsync Files to VM
+              run: |
+                  # rsync the 'dist' folder created in the build step
+                  # Target: ~/webbfarstun/dist/ on the VPS
+
+                  rsync -avz --delete \
+                    -e "ssh" \
+                    ./dist/ \
+                    vm_via_tunnel:~/webbfarstun/dist/
