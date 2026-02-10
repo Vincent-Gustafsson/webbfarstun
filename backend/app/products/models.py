@@ -3,11 +3,13 @@ from typing import Optional
 from sqlmodel import Field, Relationship, SQLModel
 
 from .schemas import (
+    ActionBase,
     CategoryBase,
     ProductBase,
     ProductConfigBase,
     ProductGroupBase,
     ProductImageBase,
+    UserBase,
     VariationBase,
     VariationOptionBase,
 )
@@ -72,3 +74,15 @@ class ProductImage(ProductImageBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     product_id: int = Field(foreign_key="product.id")
     product: list["Product"] = Relationship(back_populates="product_images")
+
+
+class User(UserBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    email: str = Field(unique=True)
+    action: list["Action"] = Relationship(back_populates="user")
+
+
+class Action(ActionBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    user: list["User"] = Relationship(back_populates="action")

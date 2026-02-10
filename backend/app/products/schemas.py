@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm.base import PASSIVE_NO_RESULT
 from sqlalchemy.orm.state import PASSIVE_NO_INITIALIZE
 from sqlmodel import Field, SQLModel
@@ -14,7 +17,7 @@ class CategoryCreate(CategoryBase):
     pass
 
 
-class CategoryUpdate(SQLModel):
+class CategoryUpdate(CategoryBase):
     name: str | None
     description: str | None
     category_parent_id: int | None
@@ -38,7 +41,7 @@ class ProductCreate(ProductBase):
     options: list[int]
 
 
-class ProductUpdate(SQLModel):
+class ProductUpdate(ProductBase):
     name: str | None = None
     product_group_id: int | None = None
     price: int | None = None
@@ -92,7 +95,6 @@ class VariationOptionBase(SQLModel):
 
 class VariationOptionCreate(VariationOptionBase):
     variation_id: int | None
-    pass
 
 
 class VariationOptionUpdate(VariationOptionBase):
@@ -137,3 +139,49 @@ class ProductImageUpdate(ProductImageBase):
 class ProductImagePublic(ProductImageBase):
     id: int
     product_id: int
+
+
+class UserBase(SQLModel):
+    name: str
+    password_hash: str
+    is_admin: bool = False
+    is_employee: bool = False
+    is_active: bool = True
+
+
+class UserCreate(UserBase):
+    email: str = Field(unique=True)
+
+
+class UserPublic(UserBase):
+    id: int
+    email: str
+
+
+class UserUpdate(UserBase):
+    name: str | None = None
+    password_hash: str | None = None
+    is_admin: bool | None = None
+    is_employee: bool | None = None
+    is_active: bool | None = None
+
+
+class ActionBase(SQLModel):
+    type: str
+    metadata: dict = Field(sa_type=JSONB)
+    at_time: datetime
+
+
+class ActionCreate(ActionBase):
+    pass
+
+
+class ActionPublic(ActionBase):
+    id: int
+    user_id: int
+
+
+class ActionUpdate(ActionBase):
+    type: str | None = None
+    metadata: dict | None = None
+    at_time: datetime | None = None
