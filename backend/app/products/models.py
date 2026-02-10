@@ -38,10 +38,10 @@ class ProductConfig(ProductConfigBase, table=True):
 class Product(ProductBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     product_group_id: int = Field(foreign_key="productgroup.id")
-    product_group: list["ProductGroup"] = Relationship(back_populates="products")
+    product_group: "ProductGroup" = Relationship(back_populates="products")
     product_images: list["ProductImage"] = Relationship(back_populates="product")
     variation_options: list["VariationOption"] = Relationship(
-        back_populates="product", link_model=ProductConfig
+        back_populates="products", link_model=ProductConfig
     )
 
 
@@ -49,13 +49,13 @@ class ProductGroup(ProductGroupBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     category_id: int = Field(foreign_key="category.id")
     products: list["Product"] = Relationship(back_populates="product_group")
-    category: list["Category"] = Relationship(back_populates="product_groups")
+    category: "Category" = Relationship(back_populates="product_groups")
 
 
 class Variation(VariationBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     category_id: int = Field(foreign_key="category.id")
-    category: list["Category"] = Relationship(back_populates="variations")
+    category: "Category" = Relationship(back_populates="variations")
     variation_options: list["VariationOption"] = Relationship(
         back_populates="variation"
     )
@@ -64,8 +64,8 @@ class Variation(VariationBase, table=True):
 class VariationOption(VariationOptionBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     variation_id: int = Field(foreign_key="variation.id")
-    variation: list["Variation"] = Relationship(back_populates="variation_options")
-    product: list["Product"] = Relationship(
+    variation: "Variation" = Relationship(back_populates="variation_options")
+    products: list["Product"] = Relationship(
         back_populates="variation_options", link_model=ProductConfig
     )
 
@@ -73,7 +73,7 @@ class VariationOption(VariationOptionBase, table=True):
 class ProductImage(ProductImageBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     product_id: int = Field(foreign_key="product.id")
-    product: list["Product"] = Relationship(back_populates="product_images")
+    product: Product = Relationship(back_populates="product_images")
 
 
 class User(UserBase, table=True):
@@ -85,4 +85,4 @@ class User(UserBase, table=True):
 class Action(ActionBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
-    user: list["User"] = Relationship(back_populates="action")
+    user: "User" = Relationship(back_populates="action")
