@@ -17,7 +17,7 @@ class CategoryCreate(CategoryBase):
     pass
 
 
-class CategoryUpdate(CategoryBase):
+class CategoryUpdate(SQLModel):
     name: str | None
     description: str | None
     category_parent_id: int | None
@@ -41,7 +41,7 @@ class ProductCreate(ProductBase):
     options: list[int]
 
 
-class ProductUpdate(ProductBase):
+class ProductUpdate(SQLModel):
     name: str | None = None
     product_group_id: int | None = None
     price: int | None = None
@@ -168,7 +168,7 @@ class UserUpdate(UserBase):
 
 class ActionBase(SQLModel):
     type: str
-    metadata: dict = Field(sa_type=JSONB)
+    meta: dict = Field(sa_type=JSONB)
     at_time: datetime
 
 
