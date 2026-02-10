@@ -183,5 +183,5 @@ class ActionPublic(ActionBase):
 
 class ActionUpdate(ActionBase):
     type: str | None = None
-    metadata: dict | None = None
+    meta: dict | None = None
     at_time: datetime | None = None
