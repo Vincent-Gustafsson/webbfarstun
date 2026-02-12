@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5173'
+const API_BASE = 'https://dev.webbfarstun.shop/api'
 
 async function request<T>(url: string, config: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${url}`, {

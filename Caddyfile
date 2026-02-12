@@ -1,0 +1,20 @@
+{
+    admin off
+}
+
+:80 {
+    log {
+        output stdout
+        format json
+    }
+
+    # API -> FastAPI
+    handle /api/* {
+        reverse_proxy web:8000
+    }
+
+    # Frontend (everything else) -> Vite
+    handle {
+        reverse_proxy frontend:5173
+    }
+}

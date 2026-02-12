@@ -35,6 +35,16 @@ services:
             - /app/node_modules
         depends_on:
             - web
+    caddy:
+        image: caddy:alpine
+        container_name: caddy
+        restart: always
+        volumes:
+            - ./Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
+            - caddy_config:/config
+        ports:
+            - "80:80"
     tunnel:
         image: cloudflare/cloudflared:latest
         container_name: my-tunnel
@@ -48,3 +58,5 @@ services:
 
 volumes:
     postgres_data:
+    caddy_data:
+    caddy_config:

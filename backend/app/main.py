@@ -19,12 +19,14 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, root_path="/api")
 
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://webbfarstun.shop",
+    "https://dev.webbfarstun.shop",
+    "http://dev.webbfarstun.shop",
 ]
 
 app.add_middleware(
