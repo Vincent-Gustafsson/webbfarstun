@@ -49,7 +49,7 @@ const onTreeCreate = async (payload: { name: string; parentId: number }) => {
 <template>
   <div class="h-screen flex flex-col bg-base-100 p-6 overflow-hidden">
     <header class="flex justify-between items-center mb-6 shrink-0">
-      <h1 class="text-3xl font-bold">Store Manager</h1>
+      <h1 class="text-3xl font-bold">Shop Manager 2</h1>
     </header>
 
     <div class="flex flex-1 gap-6 overflow-hidden">

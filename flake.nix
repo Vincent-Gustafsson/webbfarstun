@@ -25,6 +25,8 @@
                         pydantic
                         requests
                         sqlmodel
+                        httpx
+                        pytest
                     ]
                 );
             in
@@ -35,7 +37,11 @@
                         pkgs.nodejs_24
                         pkgs.nodePackages.pnpm
                     ];
-                    shellHook = "export NIX_SHELL_NAME='webbfarstun'";
+                    shellHook = ''
+                        export NIX_SHELL_NAME='webbfarstun'
+                        # Create a symlink named .venv pointing to the python environment
+                        ln -sf ${pythonEnv} .venv
+                    '';
                 };
             }
         );
