@@ -57,7 +57,6 @@ watch(
       return
     }
 
-    // clear SKU error (both "empty" and "already exists") when user edits to something valid
     skuError.value = null
   },
 )

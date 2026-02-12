@@ -7,6 +7,7 @@ import { getErrorMessage } from '@/utils/error'
 export const useCategoryStore = defineStore('category', {
   state: () => ({
     categories: [] as Category[],
+    activeCategoryId: null as number | null,
     loading: false,
     error: null as string | null,
     lastFetched: null as number | null,
@@ -14,12 +15,17 @@ export const useCategoryStore = defineStore('category', {
 
   getters: {
     tree: (state): CategoryNode[] => buildCategoryTree(state.categories),
-
-    // Usage: store.getById(123)
+    activeCategory: (state) =>
+      state.activeCategoryId != null
+        ? (state.categories.find((c) => c.id === state.activeCategoryId) ?? null)
+        : null,
     getById: (state) => (id: number) => state.categories.find((c) => c.id === id) ?? null,
   },
 
   actions: {
+    setActiveCategory(id: number | null) {
+      this.activeCategoryId = id
+    },
     upsert(category: Category) {
       const index = this.categories.findIndex((c) => c.id === category.id)
       if (index === -1) this.categories.push(category)

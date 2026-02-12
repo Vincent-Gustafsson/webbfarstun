@@ -2,7 +2,7 @@
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import Navbar from '@/components/Navbar.vue'
-import CategoryList from '@/components/CategoryList.vue'
+import CategoryTree from '@/components/CategoryTree.vue'
 import { useCategoryStore } from '@/stores/category'
 
 const categoryStore = useCategoryStore()
@@ -23,7 +23,7 @@ onMounted(() => {
           <div class="card bg-base-100 shadow">
             <div class="card-body">
               <h2 class="card-title text-base">Categories</h2>
-              <CategoryList :nodes="categoryStore.tree" />
+              <CategoryTree />
             </div>
           </div>
         </aside>

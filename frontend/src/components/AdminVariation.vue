@@ -19,24 +19,13 @@ const defaults = (): VariationCreate => ({
   category_id: 0,
 })
 
+//Clear form on succesfull submit
 const form = reactive<VariationCreate>(defaults())
 const submitted = ref(false)
 
 function resetForm() {
   Object.assign(form, defaults())
-  category_id.value = null
 }
-
-const categoryError = ref<string | null>(null)
-const generalError = computed(() => props.error)
-
-watch(
-  () => form.category_id,
-  () => {
-    categoryError.value = null
-    emit('clear-error')
-  },
-)
 
 watch(
   () => props.submitting,
@@ -48,13 +37,60 @@ watch(
   },
 )
 
-function onSubmit() {
-  submitted.value = true
-  categoryError.value = null
-  emit('clear-error')
-  emit('create', { ...form })
+//Cast error if category_id is not set
+const generalError = computed(() => props.error)
+
+watch(
+  () => form.category_id,
+  (category_id) => {
+    if (fieldValueErrors.value.category_id && category_id > 0) {
+      fieldValueErrors.value = { ...fieldValueErrors.value, category_id: undefined }
+    }
+  },
+)
+
+
+
+//Cast error if it isnt category error
+watch(
+  () => props.error,
+  (msg) => {
+    if (!msg) {
+      return
+    }
+  },
+)
+
+
+//validate 
+const fieldValueErrors = ref<{name: string; category_id?: string }>({})
+
+function validate() {
+  const e: typeof fieldValueErrors.value = {}
+   if(form.name.trim().length < 3) e.name = 'Name must be at least 3 characters'
+   if (form.category_id <= 0) e.category_id = 'Please select a category'
 }
 
+
+function onSubmit() {
+  emit('clear-error')
+
+  if (!form.category_id.trim()) {
+    submitted.value = false
+    return
+  }
+
+  if (!validate()) {
+    submitted.value = false
+    return
+  }
+
+  submitted.value = true
+
+  emit('create', { ...form, category_id: form.category_id.trim() })
+}
+
+//Dropdown of product categories
 const categoryStore = useCategoryStore()
 
 onMounted(() => {

@@ -4,7 +4,7 @@ import HomeView from '../views/HomeView.vue'
 import AdminView from '../views/AdminView.vue'
 import CategoryView from '../views/CategoryView.vue'
 import ProductView from '../views/AdminCreateProductView.vue'
-import VariationView from '../views/AdminVariationView.vue'
+import VariationView from '../views/AdminVariationVíew.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
