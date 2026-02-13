@@ -9,6 +9,7 @@ from .products.api.category import router as category_router
 from .products.api.product import router as products_router
 from .products.api.product_group import router as product_group_router
 from .products.api.product_image import router as product_image_router
+from .products.api.user import router as user_router
 from .products.api.variation import router as variation_router
 from .products.api.variation_option import router as variation_options_router
 
@@ -43,6 +44,7 @@ app.include_router(product_group_router)
 app.include_router(variation_router)
 app.include_router(variation_options_router)
 app.include_router(product_image_router)
+app.include_router(user_router)
 
 
 @app.get("/")
