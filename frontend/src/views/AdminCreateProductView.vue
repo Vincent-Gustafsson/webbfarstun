@@ -9,10 +9,12 @@ const productStore = useProductStore()
   <main class="p-4">
     <ProductForm
       :submitting="productStore.loading"
-      :error="productStore.error"
-      @clear-error="productStore.error = null"
+      :general-error="productStore.error"
+      :server-field-errors="productStore.fieldErrors"
+      @clear-error="productStore.error"
       @create="productStore.create"
       @cancel="$router.push('/')"
     />
   </main>
 </template>
+D

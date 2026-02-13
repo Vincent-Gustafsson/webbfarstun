@@ -8,15 +8,12 @@ export const useProductStore = defineStore('product', {
     products: [] as Product[],
     loading: false,
     error: null as string | null,
+    fieldErrors: {} as Partial<Record<keyof ProductCreate, string>>,
     lastFetched: null as number | null,
   }),
 
   getters: {
     productCount: (state) => state.products.length,
-
-    productBySku: (state) => {
-      return (sku: string) => state.products.find((p) => (p as any).sku === sku)
-    },
   },
 
   actions: {
@@ -47,13 +44,24 @@ export const useProductStore = defineStore('product', {
 
     async create(payload: ProductCreate) {
       this.loading = true
+      this.error = null
+      this.fieldErrors = {}
+
       try {
         const newProduct = await productService.create(payload)
         this.products.push(newProduct)
         return newProduct
-      } catch (err: unknown) {
-        this.error = getErrorMessage(err)
-        console.error(err)
+      } catch (err: any) {
+        const data = err?.data
+        const errors = data?.detail?.errors
+
+        if (errors && typeof errors === 'object') {
+          this.fieldErrors = errors
+          this.error = null
+        } else {
+          this.error = err?.message ?? 'Failed to create product'
+          this.fieldErrors = {}
+        }
       } finally {
         this.loading = false
       }

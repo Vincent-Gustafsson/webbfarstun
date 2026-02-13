@@ -5,7 +5,8 @@ import { useProductGroupStore } from '@/stores/productGroup'
 
 const props = defineProps<{
   submitting?: boolean
-  error?: string | null
+  generalError?: string | null
+  serverFieldErrors?: Partial<Record<keyof ProductCreate, string>>
 }>()
 
 const emit = defineEmits<{
@@ -24,49 +25,67 @@ const defaults = (): ProductCreate => ({
   options: [],
 })
 
+const clientFieldErrors = ref<Partial<Record<keyof ProductCreate, string>>>({})
+
+//validate values
+
+function validate() {
+  const e: typeof clientFieldErrors.value = {}
+
+  if (form.name.trim().length < 3) e.name = 'Name must be at least 3 characters'
+  if (form.sku.trim().length < 3) e.sku = 'SKU must be at least 3 characters'
+  if (form.product_group_id <= 0) e.product_group_id = 'Please select a product group'
+  if (!Number.isFinite(form.price) || form.price < 0) e.price = 'Price must be ≥ 0'
+  if (!Number.isInteger(form.stock_qty) || form.stock_qty < 0)
+    e.stock_qty = 'Stock must be an integer ≥ 0'
+
+  clientFieldErrors.value = e
+  return Object.keys(e).length === 0
+}
+
 //Clear form on succesfull submit
 const form = reactive<ProductCreate>(defaults())
 const submitted = ref(false)
 
 function resetForm() {
   Object.assign(form, defaults())
-  skuError.value = null
 }
 
 watch(
   () => props.submitting,
   (now, prev) => {
     if (prev && !now && submitted.value) {
-      if (!props.error) resetForm()
+      if (!props.generalError && !props.serverFieldErrors) resetForm()
       submitted.value = false
     }
   },
 )
 
-//Cast error on SKU != uniq
-const skuError = ref<string | null>(null)
-const generalError = computed(() => (skuError.value ? null : props.error))
+//remove error when valid
 
 watch(
   () => form.sku,
   (sku) => {
-    emit('clear-error')
-
-    if (!sku.trim()) {
-      skuError.value = 'SKU cannot be empty'
-      return
+    if (clientFieldErrors.value.sku && sku.trim().length >= 3) {
+      clientFieldErrors.value = { ...clientFieldErrors.value, sku: undefined }
     }
-
-    skuError.value = null
   },
 )
 
-//remove error when price or qty is >=0 or when product_group_id not set
+
+watch(
+  () => form.name,
+  (name) => {
+    if (clientFieldErrors.value.name && name.trim().length >= 3) {
+      clientFieldErrors.value = { ...clientFieldErrors.value, name: undefined }
+    }
+  },
+)
 watch(
   () => form.price,
   (price) => {
-    if (fieldValueErrors.value.price && Number.isFinite(price) && price >= 0) {
-      fieldValueErrors.value = { ...fieldValueErrors.value, price: undefined }
+    if (clientFieldErrors.value.price && Number.isFinite(price) && price >= 0) {
+      clientFieldErrors.value = { ...clientFieldErrors.value, price: undefined }
     }
   },
 )
@@ -74,8 +93,8 @@ watch(
 watch(
   () => form.stock_qty,
   (stock_qty) => {
-    if (fieldValueErrors.value.stock_qty && Number.isInteger(stock_qty) && stock_qty >= 0) {
-      fieldValueErrors.value = { ...fieldValueErrors.value, stock_qty: undefined }
+    if (clientFieldErrors.value.stock_qty && Number.isInteger(stock_qty) && stock_qty >= 0) {
+      clientFieldErrors.value = { ...clientFieldErrors.value, stock_qty: undefined }
     }
   },
 )
@@ -83,47 +102,14 @@ watch(
 watch(
   () => form.product_group_id,
   (productGroupId) => {
-    if (fieldValueErrors.value.product_group_id && productGroupId > 0) {
-      fieldValueErrors.value = { ...fieldValueErrors.value, product_group_id: undefined }
+    if (clientFieldErrors.value.product_group_id && productGroupId > 0) {
+      clientFieldErrors.value = { ...clientFieldErrors.value, product_group_id: undefined }
     }
   },
 )
-
-//Cast error if it isnt sku error
-watch(
-  () => props.error,
-  (msg) => {
-    if (!msg) {
-      skuError.value = null
-      return
-    }
-    if (msg.toLowerCase().includes('sku')) skuError.value = msg
-  },
-)
-
-//validate value of price and stock_qty
-const fieldValueErrors = ref<{ price?: string; stock_qty?: string; product_group_id?: string }>({})
-
-function validate() {
-  const e: typeof fieldValueErrors.value = {}
-
-  if (form.product_group_id <= 0) e.product_group_id = 'Please select a product group'
-  if (!Number.isFinite(form.price) || form.price < 0) e.price = 'Price must be ≥ 0'
-  if (!Number.isInteger(form.stock_qty) || form.stock_qty < 0)
-    e.stock_qty = 'Stock must be an integer ≥ 0'
-
-  fieldValueErrors.value = e
-  return Object.keys(e).length === 0
-}
 
 function onSubmit() {
   emit('clear-error')
-
-  if (!form.sku.trim()) {
-    skuError.value = 'SKU cannot be empty'
-    submitted.value = false
-    return
-  }
 
   if (!validate()) {
     submitted.value = false
@@ -131,9 +117,8 @@ function onSubmit() {
   }
 
   submitted.value = true
-  skuError.value = null
 
-  emit('create', { ...form, sku: form.sku.trim() })
+  emit('create', { ...form })
 }
 
 //Dropdown of product groups
@@ -162,12 +147,17 @@ onMounted(() => {
           <label class="label">
             <span class="label-text">Name</span>
           </label>
-          <input
-            v-model="form.name"
-            type="text"
-            placeholder="e.g. Winter Jacket"
-            class="input input-bordered w-full"
-          />
+          <label
+            class="input input-bordered flex items-center gap-2"
+            :class="clientFieldErrors.name || serverFieldErrors?.name ? 'input-error' : ''"
+          >
+            <input v-model="form.name" type="text" placeholder="e.g. Winter Jacket" class="" />
+          </label>
+          <label v-if="clientFieldErrors.name || serverFieldErrors?.name" class="label">
+            <span class="label-text-alt text-error">{{
+              clientFieldErrors.name || serverFieldErrors?.name
+            }}</span>
+          </label>
         </div>
 
         <!-- SKU -->
@@ -175,17 +165,22 @@ onMounted(() => {
           <label class="label">
             <span class="label-text">SKU</span>
           </label>
-
-          <input
-            v-model="form.sku"
-            type="text"
-            placeholder="e.g. sku-iphone-16-white"
-            class="input input-bordered w-full"
-            :class="skuError ? 'input-error' : ''"
-          />
-
-          <label v-if="skuError" class="label">
-            <span class="label-text-alt text-error">{{ skuError }}</span>
+          <label
+            class="input input-bordered flex items-center gap-2"
+            :class="clientFieldErrors.sku || serverFieldErrors?.sku ? 'input-error' : ''"
+          >
+            <input
+              v-model="form.sku"
+              type="text"
+              placeholder="e.g. sku-iphone-16-white"
+              class=""
+              :class="clientFieldErrors.sku || serverFieldErrors?.sku ? 'input-error' : ''"
+            />
+          </label>
+          <label v-if="clientFieldErrors.sku || serverFieldErrors?.sku" class="label">
+            <span class="label-text-alt text-error">{{
+              clientFieldErrors.sku || serverFieldErrors?.sku
+            }}</span>
           </label>
         </div>
 
@@ -198,7 +193,11 @@ onMounted(() => {
           <select
             v-model.number="form.product_group_id"
             class="select select-bordered w-full"
-            :class="fieldValueErrors.product_group_id ? 'select-error' : ''"
+            :class="
+              clientFieldErrors.product_group_id || serverFieldErrors?.product_group_id
+                ? 'select-error'
+                : ''
+            "
             :disabled="submitting || product_group_store.loading"
           >
             <option disabled :value="0">Select a product group…</option>
@@ -207,8 +206,13 @@ onMounted(() => {
             </option>
           </select>
 
-          <label v-if="fieldValueErrors.product_group_id" class="label">
-            <span class="label-text-alt text-error">{{ fieldValueErrors.product_group_id }}</span>
+          <label
+            v-if="clientFieldErrors.product_group_id || serverFieldErrors?.product_group_id"
+            class="label"
+          >
+            <span class="label-text-alt text-error">{{
+              clientFieldErrors.product_group_id || serverFieldErrors?.product_group_id
+            }}</span>
           </label>
 
           <label v-if="product_group_store.error" class="label">
@@ -224,7 +228,7 @@ onMounted(() => {
 
           <label
             class="input input-bordered flex items-center gap-2"
-            :class="fieldValueErrors.price ? 'input-error' : ''"
+            :class="clientFieldErrors.price || serverFieldErrors?.price ? 'input-error' : ''"
           >
             <span class="opacity-60">kr</span>
             <input
@@ -236,8 +240,10 @@ onMounted(() => {
             />
           </label>
 
-          <label v-if="fieldValueErrors.price" class="label">
-            <span class="label-text-alt text-error">{{ fieldValueErrors.price }}</span>
+          <label v-if="clientFieldErrors.price || serverFieldErrors?.price" class="label">
+            <span class="label-text-alt text-error">{{
+              clientFieldErrors.price || serverFieldErrors?.price
+            }}</span>
           </label>
         </div>
 
@@ -252,10 +258,14 @@ onMounted(() => {
             step="1"
             placeholder="0"
             class="input input-bordered w-full"
-            :class="fieldValueErrors.stock_qty ? 'input-error' : ''"
+            :class="
+              clientFieldErrors.stock_qty || serverFieldErrors?.stock_qty ? 'input-error' : ''
+            "
           />
-          <label v-if="fieldValueErrors.stock_qty" class="label">
-            <span class="label-text-alt text-error">{{ fieldValueErrors.stock_qty }}</span>
+          <label v-if="clientFieldErrors.stock_qty || serverFieldErrors?.stock_qty" class="label">
+            <span class="label-text-alt text-error">{{
+              clientFieldErrors.stock_qty || serverFieldErrors?.stock_qty
+            }}</span>
           </label>
         </div>
 
