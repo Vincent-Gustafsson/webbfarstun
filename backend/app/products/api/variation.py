@@ -18,11 +18,11 @@ def create_variation(
     *, session: Session = Depends(get_session), variation_data: VariationCreate
 ):
     if not variation_data.category_id:
-        raise HTTPException(status_code=400, detail="Category is required")
+        raise HTTPException(status_code=400,  detail={"errors": {"category": "Category is required"}})
 
     category_exists = session.get(Category, variation_data.category_id)
     if not category_exists:
-        raise HTTPException(status_code=400, detail="Category not found")
+        raise HTTPException(status_code=400,  detail={"errors": {"category": "Category not found"}})
 
     db_variation = Variation.model_validate(variation_data)
     session.add(db_variation)
@@ -46,7 +46,7 @@ def get_variations(
 def get_variation(*, variation_id: int, session: Session = Depends(get_session)):
     variation = session.get(Variation, variation_id)
     if not variation:
-        raise HTTPException(status_code=404, detail="Variation group not found")
+        raise HTTPException(status_code=404,  detail={"errors": {"variation_group": "variation group not found"}})
     return variation
 
 
@@ -59,7 +59,7 @@ def update_variation(
 ):
     db_variation = session.get(Variation, variation_id)
     if not db_variation:
-        raise HTTPException(status_code=404, detail="Product group not found")
+        raise HTTPException(status_code=404,  detail={"errors": {"product_group": "product group not found"}})
 
     update_dict = variation_data.model_dump(exclude_unset=True)
     db_variation.sqlmodel_update(update_dict)
@@ -74,7 +74,7 @@ def update_variation(
 def delete_variation(*, variation_id: int, session: Session = Depends(get_session)):
     variation = session.get(Variation, variation_id)
     if not variation:
-        raise HTTPException(status_code=404, detail="Product group not found")
+        raise HTTPException(status_code=404,  detail={"errors": {"product_group": "product group not found"}})
     session.delete(variation)
     session.commit()
     return None

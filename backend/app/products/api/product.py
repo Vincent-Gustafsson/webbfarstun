@@ -16,21 +16,24 @@ def create_product(
     if not product_data.product_group_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Product group ID is required",
+            detail={"errors": {"product_group_id": "Product group ID is required"}},
         )
 
     product_group_exists = session.get(ProductGroup, product_data.product_group_id)
     if not product_group_exists:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid product group ID"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"errors": {"product_group_id": "Invalid product group ID"}},
         )
 
-    check_sku_unique = session.exec(
+    existing = session.exec(
         select(Product).where(Product.sku == product_data.sku)
     ).first()
-    if check_sku_unique:
+
+    if existing is not None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="SKU already exists"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"errors": {"sku": "SKU already exists"}},
         )
 
     db_product = Product(**product_data.model_dump(exclude={"options"}))
@@ -47,7 +50,8 @@ def create_product(
         )
         if not check_if_all_options_exist:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid option IDs"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"errors": {"options": "Invalid option IDs"}},
             )
 
         db_product.variation_options = result
@@ -90,7 +94,9 @@ def get_products(
 def get_product(*, product_id: int, session: Session = Depends(get_session)):
     product = session.get(Product, product_id)
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(
+            status_code=404, detail={"errors": {"product": "Product not found"}}
+        )
     return product
 
 
@@ -103,7 +109,9 @@ def update_product(
 ):
     db_product = session.get(Product, product_id)
     if not db_product:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=404, detail={"errors": {"category": "category not found"}}
+        )
 
     update_dict = product_data.model_dump(exclude_unset=True)
     _ = db_product.sqlmodel_update(update_dict)
@@ -118,7 +126,9 @@ def update_product(
 def delete_product(*, product_id: int, session: Session = Depends(get_session)):
     product = session.get(Product, product_id)
     if not product:
-        raise HTTPException(status_code=404, detail="product not found")
+        raise HTTPException(
+            status_code=404, detail={"errors": {"product": "Product not found"}}
+        )
     session.delete(product)
     session.commit()
     return None

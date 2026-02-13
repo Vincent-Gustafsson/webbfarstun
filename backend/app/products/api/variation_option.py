@@ -19,13 +19,17 @@ def create_variation_option(
     *, session: Session = Depends(get_session), v_opt_data: VariationOptionCreate
 ):
     if not session.get(Variation, v_opt_data.variation_id):
-        raise HTTPException(status_code=400, detail="Variation not found")
+        raise HTTPException(
+            status_code=400, detail={"errors": {"variation_id": "Variation not found"}}
+        )
 
     check_variation_exists = session.exec(
         select(Variation).where(Variation.id == v_opt_data.variation_id)
     ).first()
     if not check_variation_exists:
-        raise HTTPException(status_code=400, detail="Variation not found")
+        raise HTTPException(
+            status_code=400, detail={"errors": {"variation_id": "Variation not found"}}
+        )
 
     db_variation = VariationOption.model_validate(v_opt_data)
     session.add(db_variation)
@@ -51,7 +55,10 @@ def get_variation_option(
 ):
     v_opt = session.get(VariationOption, variation_option_id)
     if not v_opt:
-        raise HTTPException(status_code=404, detail="Variation option not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"variation_option_id": "variation option not found"}},
+        )
     return v_opt
 
 
@@ -64,7 +71,10 @@ def update_variation_option(
 ):
     v_opt = session.get(VariationOption, variation_option_id)
     if not v_opt:
-        raise HTTPException(status_code=404, detail="Variation option not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"variation_option_id": "variation option not found"}},
+        )
 
     update_dict = v_opt_data.model_dump(exclude_unset=True)
     _ = v_opt.sqlmodel_update(update_dict)
@@ -81,7 +91,10 @@ def delete_variation_option(
 ):
     v_opt = session.get(VariationOption, variation_option_id)
     if not v_opt:
-        raise HTTPException(status_code=404, detail="Variation option not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"variation_option_id": "variation option not found"}},
+        )
     session.delete(v_opt)
     session.commit()
     return None

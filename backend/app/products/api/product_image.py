@@ -20,12 +20,15 @@ def create_product_image(
     *, session: Session = Depends(get_session), product_image_data: ProductImageCreate
 ):
     if not product_image_data.product_id:
-        raise HTTPException(status_code=400, detail="Product id is required")
+        raise HTTPException(
+            status_code=400, detail={"errors": {"product_id": "Product id is required"}}
+        )
 
     product_exists = session.get(Product, product_image_data.product_id)
     if not product_exists:
-        raise HTTPException(status_code=400, detail="Product id not found")
-
+        raise HTTPException(
+            status_code=400, detail={"errors": {"product_id": "Product id not found"}}
+        )
 
     db_product_image = ProductImage.model_validate(product_image_data)
     session.add(db_product_image)
@@ -48,12 +51,13 @@ def get_product_images(
 
 
 @router.get("/{product_image_id}", response_model=ProductImagePublic)
-def get_product_image(
-    *, product_id: int, session: Session = Depends(get_session)
-):
+def get_product_image(*, product_id: int, session: Session = Depends(get_session)):
     product_image = session.get(ProductImage, product_id)
     if not product_image:
-        raise HTTPException(status_code=404, detail="Product image not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"product_image_id": "product image not found"}},
+        )
     return product_image
 
 
@@ -66,7 +70,10 @@ def update_product_image(
 ):
     db_product_image = session.get(ProductImage, product_image_id)
     if not db_product_image:
-        raise HTTPException(status_code=404, detail="Product image not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"product_image_id": "product image not found"}},
+        )
 
     update_dict = product_image_data.model_dump(exclude_unset=True)
     db_product_image.sqlmodel_update(update_dict)
@@ -83,7 +90,10 @@ def delete_product_image(
 ):
     product_image = session.get(ProductImage, product_image_id)
     if not product_image:
-        raise HTTPException(status_code=404, detail="Product image not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"product_image_id": "product image not found"}},
+        )
     session.delete(product_image)
     session.commit()
     return None

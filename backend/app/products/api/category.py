@@ -14,7 +14,7 @@ def create_category(
 ):
     if category_data.category_parent_id:
         if not session.get(Category, category_data.category_parent_id):
-            raise HTTPException(status_code=400, detail="Parent category not found")
+            raise HTTPException(status_code=400,  detail={"errors": {"category_parent_id": "Parent category not found"}})
 
     db_category = Category.model_validate(category_data)
     session.add(db_category)
@@ -36,7 +36,7 @@ def get_categories(
 def get_category(*, category_id: int, session: Session = Depends(get_session)):
     category = session.get(Category, category_id)
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(status_code=404,  detail={"errors": {"category_id": "Category not found"}})
     return category
 
 
@@ -44,7 +44,7 @@ def get_category(*, category_id: int, session: Session = Depends(get_session)):
 def get_subcategories(*, category_id: int, session: Session = Depends(get_session)):
     category = session.get(Category, category_id)
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(status_code=404,  detail={"errors": {"category_id": "Category not found"}})
 
     return category.subcategories
 
@@ -58,7 +58,7 @@ def update_category(
 ):
     db_category = session.get(Category, category_id)
     if not db_category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(status_code=404,  detail={"errors": {"category_id": "Category not found"}})
 
     update_dict = category_data.model_dump(exclude_unset=True)
     db_category.sqlmodel_update(update_dict)
@@ -73,7 +73,7 @@ def update_category(
 def delete_category(*, category_id: int, session: Session = Depends(get_session)):
     category = session.get(Category, category_id)
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(status_code=404,  detail={"errors": {"category_id": "Category not found"}})
     session.delete(category)
     session.commit()
     return None

@@ -20,11 +20,16 @@ def create_product_group(
     *, session: Session = Depends(get_session), product_data: ProductGroupCreate
 ):
     if not product_data.category_id:
-        raise HTTPException(status_code=400, detail="Category is required")
+        raise HTTPException(
+            status_code=400,
+            detail={"errors": {"category_id": "Category ID is required"}},
+        )
 
     category_exists = session.get(Category, product_data.category_id)
     if not category_exists:
-        raise HTTPException(status_code=400, detail="Category not found")
+        raise HTTPException(
+            status_code=400, detail={"errors": {"category_id": "Category ID not found"}}
+        )
 
     db_product_group = ProductGroup.model_validate(product_data)
     session.add(db_product_group)
@@ -52,7 +57,10 @@ def get_product_group(
 ):
     product_group = session.get(ProductGroup, product_group_id)
     if not product_group:
-        raise HTTPException(status_code=404, detail="Product group not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"product_group_id": "Product group not found"}},
+        )
     return product_group
 
 
@@ -65,7 +73,10 @@ def update_product_group(
 ):
     db_product_group = session.get(ProductGroup, product_group_id)
     if not db_product_group:
-        raise HTTPException(status_code=404, detail="Product group not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"product_group_id": "Product group not found"}},
+        )
 
     update_dict = product_group_data.model_dump(exclude_unset=True)
     db_product_group.sqlmodel_update(update_dict)
@@ -80,7 +91,10 @@ def update_product_group(
 def delete_product(*, product_group_id: int, session: Session = Depends(get_session)):
     product_group = session.get(ProductGroup, product_group_id)
     if not product_group:
-        raise HTTPException(status_code=404, detail="Product group not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"product_group_id": "Product group not found"}},
+        )
     session.delete(product_group)
     session.commit()
     return None
