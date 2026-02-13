@@ -1,7 +1,17 @@
 export function getErrorMessage(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message
+  const e = err as any
+
+  const detail = e?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+
+  if (detail && typeof detail === 'object') {
+    if (typeof detail.message === 'string') return detail.message
   }
-  // Fallback if the error is a string or something else
-  return String(err)
+
+  const msg = e?.response?.data?.message
+  if (typeof msg === 'string') return msg
+
+  if (err instanceof Error) return err.message
+
+  return 'Something went wrong'
 }
