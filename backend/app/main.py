@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse
 
 from .db import create_db_and_tables
 from .products.api.action import router as action_router
@@ -24,7 +26,12 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan, root_path="/api")
+app = FastAPI(
+    lifespan=lifespan,
+    root_path="/api",
+    docs_url=None,
+    redoc_url=None,
+)
 
 origins = [
     "http://localhost:5173",
@@ -63,6 +70,36 @@ def read_root():
 @app.get("/goodbye")
 def read_root():
     return {"Goodbye": "World"}
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    openapi_url = f"{app.root_path}{app.openapi_url}"
+    html = get_swagger_ui_html(
+        openapi_url=openapi_url,
+        title="API Docs",
+    ).body.decode("utf-8")
+
+    custom_css = """
+    <style>
+      html, body { background: #f5f7fb !important; }
+      .swagger-ui { color: #0f172a !important; }
+      .swagger-ui .topbar { background: #0b1220 !important; }
+      .swagger-ui .info .title,
+      .swagger-ui .info p,
+      .swagger-ui .opblock-description-wrapper p,
+      .swagger-ui .opblock-summary-description,
+      .swagger-ui label,
+      .swagger-ui .parameter__name,
+      .swagger-ui .response-col_status,
+      .swagger-ui .response-col_description { color: #0f172a !important; }
+      .swagger-ui .scheme-container {
+        background: #ffffff !important;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+      }
+    </style>
+    """
+    return HTMLResponse(html.replace("</head>", f"{custom_css}</head>"))
 
 
 if __name__ == "__main__":
