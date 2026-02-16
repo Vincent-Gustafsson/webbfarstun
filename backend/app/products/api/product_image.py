@@ -1,7 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
+from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 
 from ...db import get_session
+from ..image_storage import resolve_media_path, save_product_image
 from ..models import Product, ProductImage
 from ..schemas import (
     ProductImageBase,
@@ -51,8 +62,10 @@ def get_product_images(
 
 
 @router.get("/{product_image_id}", response_model=ProductImagePublic)
-def get_product_image(*, product_id: int, session: Session = Depends(get_session)):
-    product_image = session.get(ProductImage, product_id)
+def get_product_image(
+    *, product_image_id: int, session: Session = Depends(get_session)
+):
+    product_image = session.get(ProductImage, product_image_id)
     if not product_image:
         raise HTTPException(
             status_code=404,
@@ -97,3 +110,47 @@ def delete_product_image(
     session.delete(product_image)
     session.commit()
     return None
+
+
+@router.post(
+    "/upload", response_model=ProductImagePublic, status_code=status.HTTP_201_CREATED
+)
+def upload_product_image(
+    *,
+    session: Session = Depends(get_session),
+    product_id: int = Form(...),
+    image: UploadFile = File(...),
+):
+    product_exists = session.get(Product, product_id)
+    if not product_exists:
+        raise HTTPException(
+            status_code=400, detail={"errors": {"product_id": "Product id not found"}}
+        )
+
+    db_url = save_product_image(image)
+
+    # Assumes ProductImageBase has "url: str"
+    db_product_image = ProductImage(product_id=product_id, url=db_url)
+
+    session.add(db_product_image)
+    session.commit()
+    session.refresh(db_product_image)
+    return db_product_image
+
+
+@router.get("/{product_image_id}/file")
+def download_product_image_file(
+    *, product_image_id: int, session: Session = Depends(get_session)
+):
+    product_image = session.get(ProductImage, product_image_id)
+    if not product_image:
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"product_image_id": "product image not found"}},
+        )
+
+    abs_path = resolve_media_path(product_image.url)
+    if not abs_path.exists():
+        raise HTTPException(status_code=404, detail="Image file not found on disk")
+
+    return FileResponse(abs_path)
