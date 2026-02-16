@@ -75,15 +75,19 @@ class ProductGroupBase(SQLModel):
 
 class ProductGroupCreate(ProductGroupBase):
     category_id: int | None = None
+    variation_ids: list[int] = []
 
 
 class ProductGroupUpdate(ProductGroupBase):
+    name: str | None = None
     category_id: int | None = None
+    variation_ids: list[int] | None = None
 
 
 class ProductGroupPublic(ProductGroupBase):
     id: int
     category_id: int
+    variation_ids: list[int] = []
 
 
 class VariationBase(SQLModel):
@@ -136,6 +140,23 @@ class ProductConfigPublic(ProductConfigBase):
     id: int
     variation_option_id: int
     product_id: int
+
+
+class ProductGroupVariationBase(SQLModel):
+    pass
+
+
+class ProductGroupVariationCreate(ProductGroupVariationBase):
+    pass
+
+
+class ProductGroupVariationUpdate(ProductGroupVariationBase):
+    pass
+
+
+class ProductGroupVariationPublic(ProductGroupVariationBase):
+    product_group_id: int
+    variation_id: int
 
 
 class ProductImageBase(SQLModel):

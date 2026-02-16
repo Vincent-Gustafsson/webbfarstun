@@ -8,6 +8,7 @@ from .schemas import (
     ProductBase,
     ProductConfigBase,
     ProductGroupBase,
+    ProductGroupVariationBase,
     ProductImageBase,
     ReviewBase,
     ShoppingCartBase,
@@ -51,12 +52,20 @@ class Product(ProductBase, table=True):
     )
 
 
+class ProductGroupVariation(ProductGroupVariationBase, table=True):
+    product_group_id: int = Field(foreign_key="productgroup.id", primary_key=True)
+    variation_id: int = Field(foreign_key="variation.id", primary_key=True)
+
+
 class ProductGroup(ProductGroupBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     category_id: int = Field(foreign_key="category.id")
     products: list["Product"] = Relationship(back_populates="product_group")
     reviews: list["Review"] = Relationship(back_populates="product_group")
     category: "Category" = Relationship(back_populates="product_groups")
+    variations: list["Variation"] = Relationship(
+        back_populates="product_groups", link_model=ProductGroupVariation
+    )
 
 
 class Variation(VariationBase, table=True):
@@ -65,6 +74,9 @@ class Variation(VariationBase, table=True):
     category: "Category" = Relationship(back_populates="variations")
     variation_options: list["VariationOption"] = Relationship(
         back_populates="variation"
+    )
+    product_groups: list["ProductGroup"] = Relationship(
+        back_populates="variations", link_model=ProductGroupVariation
     )
 
 
