@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm.base import PASSIVE_NO_RESULT
 from sqlalchemy.orm.state import PASSIVE_NO_INITIALIZE
@@ -158,7 +159,7 @@ class UserPublic(UserBase):
     email: str
 
 
-class UserUpdate(UserBase):
+class UserUpdate(SQLModel):
     name: str | None = None
     password_hash: str | None = None
     is_admin: bool | None = None
@@ -173,7 +174,7 @@ class ActionBase(SQLModel):
 
 
 class ActionCreate(ActionBase):
-    pass
+    user_id: int
 
 
 class ActionPublic(ActionBase):
@@ -181,7 +182,67 @@ class ActionPublic(ActionBase):
     user_id: int
 
 
-class ActionUpdate(ActionBase):
+class ActionUpdate(SQLModel):
     type: str | None = None
     meta: dict | None = None
     at_time: datetime | None = None
+
+
+class ReviewBase(SQLModel):
+    score: int
+    comment: str
+
+
+class ReviewCreate(ReviewBase):
+    product_group_id: int
+    user_id: int
+
+
+class ReviewPublic(ReviewBase):
+    id: int
+    product_group_id: int
+    user_id: int
+
+
+class ReviewUpdate(SQLModel):
+    score: int | None = None
+    comment: str | None = None
+    product_group_id: int | None = None
+    user_id: int | None = None
+
+
+class ShoppingCartBase(SQLModel):
+    user_id: int
+
+
+class ShoppingCartCreate(ShoppingCartBase):
+    pass
+
+
+class ShoppingCartPublic(ShoppingCartBase):
+    id: int
+
+
+class ShoppingCartUpdate(SQLModel):
+    user_id: int | None = None
+
+
+class ShoppingCartItemBase(SQLModel):
+    qty: int
+
+
+class ShoppingCartItemCreate(ShoppingCartItemBase):
+    product_id: int
+    shopping_cart_id: int
+
+
+class ShoppingCartItemPublic(ShoppingCartItemBase):
+    id: int
+    product_id: int
+    shopping_cart_id: int
+
+
+class ShoppingCartItemUpdate(SQLModel):
+    product_id: int | None = None
+    shopping_cart_id: int | None = None
+    qty: int | None = None
