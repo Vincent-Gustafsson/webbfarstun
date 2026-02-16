@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { reactive, watch, computed, onMounted, ref } from 'vue'
-import type { ProductCreate } from '@/types/adminCreateProduct'
-import { useProductGroupStore } from '@/stores/productGroup'
+import type { ProductCreate } from '@/types/admin/adminCreateProduct'
+import { useProductGroupStore } from '@/stores/admin/adminCreateProductGroup'
+import { useVariationStore } from '@/stores/admin/adminVariation'
 
 const props = defineProps<{
   submitting?: boolean
   generalError?: string | null
   serverFieldErrors?: Partial<Record<keyof ProductCreate, string>>
 }>()
+
+type ProductVariation = {
+  variation_id: number
+}
+
+const makeVariationRow = (): ProductVariation => ({
+  variation_id: 0,
+})
 
 const emit = defineEmits<{
   (e: 'create', payload: ProductCreate): void
@@ -22,10 +31,13 @@ const defaults = (): ProductCreate => ({
   stock_qty: 0,
   description: '',
   sku: '',
-  options: [],
+  options: [] as any,
 })
 
 const clientFieldErrors = ref<Partial<Record<keyof ProductCreate, string>>>({})
+const hasServerFieldErrors = computed(
+  () => !!props.serverFieldErrors && Object.keys(props.serverFieldErrors).length > 0,
+)
 
 //validate values
 
@@ -47,6 +59,50 @@ function validate() {
 const form = reactive<ProductCreate>(defaults())
 const submitted = ref(false)
 
+//Variation Options add
+function addVariationRow() {
+  ;(form.options as any).push(makeVariationRow())
+}
+
+function removeVariationRow(i: number) {
+  const rows = form.options as any as ProductVariation[]
+  rows.splice(i, 1)
+}
+
+const variationStore = useVariationStore()
+
+//Variation option error
+const variationRowErrors = ref<Record<number, string>>({})
+
+function validateVariationRows() {
+  const rows = form.options as any as ProductVariation[]
+
+  if (rows.length === 0) {
+    variationRowErrors.value = {}
+    return true
+  }
+
+  const counts = new Map<number, number>()
+  rows.forEach((r) => {
+    if (r.variation_id > 0) {
+      counts.set(r.variation_id, (counts.get(r.variation_id) ?? 0) + 1)
+    }
+  })
+
+  const errs: Record<number, string> = {}
+
+  rows.forEach((r, i) => {
+    if (r.variation_id <= 0) {
+      errs[i] = 'Please select a variation'
+    } else if ((counts.get(r.variation_id) ?? 0) > 1) {
+      errs[i] = 'This variation is already selected'
+    }
+  })
+
+  variationRowErrors.value = errs
+  return Object.keys(errs).length === 0
+}
+
 function resetForm() {
   Object.assign(form, defaults())
 }
@@ -55,7 +111,7 @@ watch(
   () => props.submitting,
   (now, prev) => {
     if (prev && !now && submitted.value) {
-      if (!props.generalError && !props.serverFieldErrors) resetForm()
+      if (!props.generalError && !hasServerFieldErrors.value) resetForm()
       submitted.value = false
     }
   },
@@ -71,7 +127,6 @@ watch(
     }
   },
 )
-
 
 watch(
   () => form.name,
@@ -108,24 +163,39 @@ watch(
   },
 )
 
+watch(
+  () => (form.options as any as ProductVariation[]).map((r) => r.variation_id),
+  () => {
+    if (Object.keys(variationRowErrors.value).length) validateVariationRows()
+  },
+  { deep: true },
+)
+
 function onSubmit() {
   emit('clear-error')
 
-  if (!validate()) {
+  const validateFields = validate()
+  const validateVariations = validateVariationRows()
+
+  if (!validateFields || !validateVariations) {
     submitted.value = false
     return
   }
 
-  submitted.value = true
+  const rows = form.options as any as ProductVariation[]
+  const variationIds = rows.map((r) => r.variation_id)
 
-  emit('create', { ...form })
+  const payload = { ...form, options: variationIds }
+
+  submitted.value = true
+  emit('create', payload as any)
 }
 
 //Dropdown of product groups
 const product_group_store = useProductGroupStore()
 
 onMounted(() => {
-  if (product_group_store.productGroups?.length) return
+  variationStore.fetchAll?.()
   product_group_store.fetchAll?.()
 })
 </script>
@@ -267,6 +337,59 @@ onMounted(() => {
               clientFieldErrors.stock_qty || serverFieldErrors?.stock_qty
             }}</span>
           </label>
+        </div>
+
+        <!-- Variations -->
+        <div class="md:col-span-2 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="label p-0">
+              <span class="label-text">Variations</span>
+            </label>
+
+            <button
+              type="button"
+              class="btn btn-outline btn-sm btn-square"
+              @click="addVariationRow"
+            >
+              +
+            </button>
+          </div>
+
+          <div class="space-y-2">
+            <div
+              v-for="(row, i) in form.options"
+              :key="i"
+              class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-end"
+            >
+              <div class="form-control">
+                <label class="label"><span class="label-text">Variation</span></label>
+
+                <select
+                  v-model.number="row.variation_id"
+                  class="select select-bordered w-full"
+                  :disabled="submitting || variationStore.loading"
+                >
+                  <option disabled :value="0">Select variation…</option>
+                  <option v-for="v in variationStore.variations" :key="v.id" :value="v.id">
+                    {{ v.name }}
+                  </option>
+                </select>
+
+                <label v-if="variationRowErrors[i]" class="label">
+                  <span class="label-text-alt text-error">{{ variationRowErrors[i] }}</span>
+                </label>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-ghost btn-square"
+                @click="removeVariationRow(i)"
+                title="Remove"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="hidden md:block"></div>

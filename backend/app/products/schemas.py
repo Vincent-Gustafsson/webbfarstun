@@ -56,6 +56,19 @@ class ProductPublic(ProductBase):
     options: list[int] = Field(default_factory=list)
 
 
+class ProductListItem(SQLModel):
+    id: int
+    name: str
+    price: int
+    stock_qty: int
+    sku: str | None = None
+
+    product_group_id: int
+    category_id: int | None = None
+
+    options: list[int] = Field(default_factory=list)
+
+
 class ProductGroupBase(SQLModel):
     name: str
 

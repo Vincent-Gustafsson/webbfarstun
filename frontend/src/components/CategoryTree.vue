@@ -10,8 +10,12 @@ const route = useRoute()
 watch(
   () => route.params.category_id,
   (v) => {
-    const id = v != null ? Number(v) : null
-    store.setActiveCategory(Number.isFinite(id as number) ? (id as number) : null)
+    if (v == null) return
+
+    const id = Number(v)
+    if (!Number.isFinite(id)) return
+
+    store.setActiveCategory(id)
   },
   { immediate: true },
 )

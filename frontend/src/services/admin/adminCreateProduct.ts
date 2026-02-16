@@ -1,5 +1,5 @@
-import { http } from '../utils/http'
-import type { Product, ProductCreate, ProductUpdate } from '../types/adminCreateProduct'
+import { http } from '@/utils/http'
+import type { Product, ProductCreate, ProductUpdate } from '@/types/admin/adminCreateProduct'
 
 export default {
   async getAll() {

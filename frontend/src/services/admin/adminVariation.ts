@@ -1,5 +1,5 @@
-import { http } from '../utils/http'
-import type { Variation, VariationCreate, VariationUpdate } from '../types/adminVariation'
+import { http } from '@/utils/http'
+import type { Variation, VariationCreate, VariationUpdate } from '@/types/admin/adminVariation'
 
 export default {
   async getAll() {

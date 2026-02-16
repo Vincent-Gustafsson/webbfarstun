@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import ProductForm from '@/components/AdminCreateProduct.vue'
-import { useProductStore } from '@/stores/adminCreateProduct'
+import ProductForm from '@/components/admin/AdminCreateProduct.vue'
+import { useProductStore } from '@/stores/admin/adminCreateProduct'
 
 const productStore = useProductStore()
 </script>

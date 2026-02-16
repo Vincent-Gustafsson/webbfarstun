@@ -19,13 +19,5 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
-    proxy: {
-      '/api': {
-        target: 'https://api.vinlaro.com', // Points to the external API
-        changeOrigin: true, // Required for external hosts
-        secure: true, // Validates SSL
-        rewrite: (path) => path.replace(/^\/api/, ''), // Removes /api prefix
-      },
-    },
   },
 })

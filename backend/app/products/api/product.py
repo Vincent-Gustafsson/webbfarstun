@@ -4,7 +4,7 @@ from sqlmodel import Session, col, select
 
 from ...db import get_session
 from ..models import Product, ProductGroup, VariationOption
-from ..schemas import ProductCreate, ProductPublic, ProductUpdate
+from ..schemas import ProductCreate, ProductListItem, ProductPublic, ProductUpdate
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -71,22 +71,39 @@ def create_product(
     )
 
 
-@router.get("/", response_model=list[ProductPublic])
+@router.get("/", response_model=list[ProductListItem])
 def get_products(
     *,
     session: Session = Depends(get_session),
     offset: int = 0,
     limit: int = Query(default=100, le=100),
+    category_id: int | None = None,
 ):
-    products = session.exec(
-        select(Product)
+    stmt = (
+        select(Product, ProductGroup.category_id)
+        .join(ProductGroup, Product.product_group_id == ProductGroup.id)
+        .options(selectinload(Product.variation_options))
         .offset(offset)
         .limit(limit)
-        .options(selectinload(Product.variation_options))
-    ).all()
+    )
+
+    if category_id is not None:
+        stmt = stmt.where(ProductGroup.category_id == category_id)
+
+    rows = session.exec(stmt).all()  # rows: list[tuple[Product, int | None]]
+
     return [
-        ProductPublic(**p.model_dump(), options=[o.id for o in p.variation_options])
-        for p in products
+        ProductListItem(
+            id=p.id,
+            name=p.name,
+            price=p.price,
+            stock_qty=p.stock_qty,
+            sku=p.sku,
+            product_group_id=p.product_group_id,
+            category_id=cat_id,
+            options=[o.id for o in p.variation_options],
+        )
+        for (p, cat_id) in rows
     ]
 
 

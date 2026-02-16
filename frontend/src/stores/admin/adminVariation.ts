@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import adminVariationService from '../services/adminVariation'
-import type { Variation, VariationCreate, VariationUpdate } from '../types/adminVariation'
+import adminVariationService from '@/services/admin/adminVariation'
+import type { Variation, VariationCreate, VariationUpdate } from '@/types/admin/adminVariation'
 import { getErrorMessage } from '@/utils/error'
 
 export const useVariationStore = defineStore('variation', {
@@ -8,7 +8,8 @@ export const useVariationStore = defineStore('variation', {
     variations: [] as Variation[],
     loading: false,
     error: null as string | null,
-    lastFetched: null as number | null, 
+    fieldErrors: {} as Partial<Record<keyof VariationCreate, string>>,
+    lastFetched: null as number | null,
   }),
 
   getters: {},
@@ -41,13 +42,24 @@ export const useVariationStore = defineStore('variation', {
 
     async create(payload: VariationCreate) {
       this.loading = true
+      this.error = null
+      this.fieldErrors = {}
+
       try {
         const newVariation = await adminVariationService.create(payload)
         this.variations.push(newVariation)
         return newVariation
-      } catch (err: unknown) {
-        this.error = getErrorMessage(err)
-        console.error(err)
+      } catch (err: any) {
+        const data = err?.data
+        const errors = data?.detail?.errors
+
+        if (errors && typeof errors === 'object') {
+          this.fieldErrors = errors
+          this.error = null
+        } else {
+          this.error = err?.message ?? 'Failed to create variation'
+          this.fieldErrors = {}
+        }
       } finally {
         this.loading = false
       }
@@ -57,7 +69,7 @@ export const useVariationStore = defineStore('variation', {
       this.loading = true
       try {
         const updatedVariation = await adminVariationService.update(id, payload)
-        
+
         const index = this.variations.findIndex((c) => c.id === id)
         if (index !== -1) {
           this.variations[index] = updatedVariation
@@ -78,12 +90,10 @@ export const useVariationStore = defineStore('variation', {
       try {
         await adminVariationService.delete(id)
       } catch (err: unknown) {
-        
         this.variations = previousProduct
         this.error = 'Failed to delete item'
-        alert('Could not delete Variation.') 
+        alert('Could not delete Variation.')
       }
     },
   },
 })
-

@@ -1,27 +1,30 @@
 import { defineStore } from 'pinia'
-import productService from '../services/adminCreateProduct'
-import type { Product, ProductCreate, ProductUpdate } from '../types/adminCreateProduct'
 import { getErrorMessage } from '@/utils/error'
+import adminProductGroupService from '@/services/admin/adminCreateProductGroup'
+import type {
+  ProductGroup,
+  ProductGroupCreate,
+  ProductGroupUpdate,
+} from '@/types/admin/adminCreateProductGroup'
 
-export const useProductStore = defineStore('product', {
+export const useProductGroupStore = defineStore('productGroup', {
   state: () => ({
-    products: [] as Product[],
+    productGroups: [] as ProductGroup[],
     loading: false,
     error: null as string | null,
-    fieldErrors: {} as Partial<Record<keyof ProductCreate, string>>,
+    fieldErrors: {} as Partial<Record<keyof ProductGroupCreate, string>>,
     lastFetched: null as number | null,
+    createdId: null as number | null,
   }),
 
-  getters: {
-    productCount: (state) => state.products.length,
-  },
+  getters: {},
 
   actions: {
     async fetchAll(force = false) {
       const now = Date.now()
       if (
         !force &&
-        this.products.length > 0 &&
+        this.productGroups.length > 0 &&
         this.lastFetched &&
         now - this.lastFetched < 5 * 60 * 1000
       ) {
@@ -32,7 +35,7 @@ export const useProductStore = defineStore('product', {
       this.error = null
 
       try {
-        this.products = await productService.getAll()
+        this.productGroups = await adminProductGroupService.getAll()
         this.lastFetched = now
       } catch (err: unknown) {
         this.error = getErrorMessage(err)
@@ -42,15 +45,15 @@ export const useProductStore = defineStore('product', {
       }
     },
 
-    async create(payload: ProductCreate) {
+    async create(payload: ProductGroupCreate) {
       this.loading = true
       this.error = null
       this.fieldErrors = {}
 
       try {
-        const newProduct = await productService.create(payload)
-        this.products.push(newProduct)
-        return newProduct
+        const newProductGroup = await adminProductGroupService.create(payload)
+        this.productGroups.push(newProductGroup)
+        this.createdId = newProductGroup.id
       } catch (err: any) {
         const data = err?.data
         const errors = data?.detail?.errors
@@ -59,7 +62,7 @@ export const useProductStore = defineStore('product', {
           this.fieldErrors = errors
           this.error = null
         } else {
-          this.error = err?.message ?? 'Failed to create product'
+          this.error = err?.message ?? 'Failed to create product group'
           this.fieldErrors = {}
         }
       } finally {
@@ -67,14 +70,14 @@ export const useProductStore = defineStore('product', {
       }
     },
 
-    async update(id: number, payload: ProductUpdate) {
+    async update(id: number, payload: ProductGroupUpdate) {
       this.loading = true
       try {
-        const updatedProduct = await productService.update(id, payload)
+        const updatedProductGroup = await adminProductGroupService.update(id, payload)
 
-        const index = this.products.findIndex((c) => c.id === id)
+        const index = this.productGroups.findIndex((pg) => pg.id === id)
         if (index !== -1) {
-          this.products[index] = updatedProduct
+          this.productGroups[index] = updatedProductGroup
         }
       } catch (err: unknown) {
         this.error = getErrorMessage(err)
@@ -85,16 +88,16 @@ export const useProductStore = defineStore('product', {
     },
 
     async remove(id: number) {
-      const previousProduct = [...this.products]
+      const previousProduct = [...this.productGroups]
 
-      this.products = this.products.filter((c) => c.id !== id)
+      this.productGroups = this.productGroups.filter((pg) => pg.id !== id)
 
       try {
-        await productService.delete(id)
+        await adminProductGroupService.delete(id)
       } catch (err: unknown) {
-        this.products = previousProduct
-        this.error = 'Failed to delete item'
-        alert('Could not delete Product.')
+        this.productGroups = previousProduct
+        this.error = 'Failed to delete product group'
+        alert('Could not delete product group.')
       }
     },
   },

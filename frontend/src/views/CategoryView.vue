@@ -3,6 +3,8 @@ import { computed, onMounted, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useCategoryStore } from '@/stores/category'
 
+import ProductsList from '@/components/ProductsList.vue'
+
 const route = useRoute()
 const categoryStore = useCategoryStore()
 
@@ -66,4 +68,6 @@ watch(categoryId, (id) => ensureLoaded(id))
       <span class="ml-2">Loading…</span>
     </div>
   </div>
+
+  <ProductsList class="mt-8" />
 </template>

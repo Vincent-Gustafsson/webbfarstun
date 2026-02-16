@@ -49,3 +49,9 @@ const toCategory = computed(() => ({
     </RouterLink>
   </li>
 </template>
+
+<style>
+.active {
+  color: red;
+}
+</style>

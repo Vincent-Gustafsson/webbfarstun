@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { reactive, watch, computed, onMounted, ref } from 'vue'
-import type { VariationCreate } from '@/types/adminVariation'
-import { useCategoryStore } from '@/stores/category'
+import type { VariationCreate } from '@/types/admin/adminVariation'
+import { useCategoryStore } from '@/stores/admin/adminCategory'
 
 const props = defineProps<{
   submitting?: boolean
-  error?: string | null
+  generalError?: string | null
+  serverFieldErrors?: Partial<Record<keyof VariationCreate, string>>
 }>()
 
 const emit = defineEmits<{
@@ -19,6 +20,20 @@ const defaults = (): VariationCreate => ({
   category_id: 0,
 })
 
+const clientFieldErrors = ref<Partial<Record<keyof VariationCreate, string>>>({})
+const hasServerFieldErrors = computed(
+  () => !!props.serverFieldErrors && Object.keys(props.serverFieldErrors).length > 0,
+)
+
+function validate() {
+  const e: typeof clientFieldErrors.value = {}
+  if (form.name.trim().length < 3) e.name = 'Name must be at least 3 characters'
+  if (form.category_id <= 0) e.category_id = 'Please select a category'
+
+  clientFieldErrors.value = e
+  return Object.keys(e).length === 0
+}
+
 //Clear form on succesfull submit
 const form = reactive<VariationCreate>(defaults())
 const submitted = ref(false)
@@ -31,25 +46,30 @@ watch(
   () => props.submitting,
   (now, prev) => {
     if (prev && !now && submitted.value) {
-      if (!props.error) resetForm()
+      if (!props.generalError && !hasServerFieldErrors.value) resetForm()
       submitted.value = false
     }
   },
 )
 
-//Cast error if category_id is not set
-const generalError = computed(() => props.error)
-
+//reset error when valid
 watch(
-  () => form.category_id,
-  (category_id) => {
-    if (fieldValueErrors.value.category_id && category_id > 0) {
-      fieldValueErrors.value = { ...fieldValueErrors.value, category_id: undefined }
+  () => form.name,
+  (name) => {
+    if (clientFieldErrors.value.name && name.trim().length >= 3) {
+      clientFieldErrors.value = { ...clientFieldErrors.value, name: undefined }
     }
   },
 )
 
-
+watch(
+  () => form.category_id,
+  (category_id) => {
+    if (clientFieldErrors.value.category_id && category_id > 0) {
+      clientFieldErrors.value = { ...clientFieldErrors.value, category_id: undefined }
+    }
+  },
+)
 
 //Cast error if it isnt category error
 watch(
@@ -61,24 +81,8 @@ watch(
   },
 )
 
-
-//validate 
-const fieldValueErrors = ref<{name: string; category_id?: string }>({})
-
-function validate() {
-  const e: typeof fieldValueErrors.value = {}
-   if(form.name.trim().length < 3) e.name = 'Name must be at least 3 characters'
-   if (form.category_id <= 0) e.category_id = 'Please select a category'
-}
-
-
 function onSubmit() {
   emit('clear-error')
-
-  if (!form.category_id.trim()) {
-    submitted.value = false
-    return
-  }
 
   if (!validate()) {
     submitted.value = false
@@ -87,7 +91,7 @@ function onSubmit() {
 
   submitted.value = true
 
-  emit('create', { ...form, category_id: form.category_id.trim() })
+  emit('create', { ...form })
 }
 
 //Dropdown of product categories
@@ -104,7 +108,6 @@ onMounted(() => {
     <div class="card-body space-y-6">
       <header class="space-y-1">
         <h2 class="card-title text-2xl">Create variation</h2>
-        <p class="text-sm opacity-70">Fill in the details below and save.</p>
       </header>
 
       <div v-if="generalError" class="alert alert-error">
@@ -117,12 +120,17 @@ onMounted(() => {
           <label class="label">
             <span class="label-text">Name</span>
           </label>
-          <input
-            v-model="form.name"
-            type="text"
-            placeholder="e.g. Winter Jacket"
-            class="input input-bordered w-full"
-          />
+          <label
+            class="input input-bordered flex items-center gap-2"
+            :class="clientFieldErrors.name || serverFieldErrors?.name ? 'input-error' : ''"
+          >
+            <input v-model="form.name" type="text" placeholder="e.g. Winter Jacket" class="" />
+          </label>
+          <label v-if="clientFieldErrors.name || serverFieldErrors?.name" class="label">
+            <span class="label-text-alt text-error">{{
+              clientFieldErrors.name || serverFieldErrors?.name
+            }}</span>
+          </label>
         </div>
 
         <!-- Category group -->
@@ -134,6 +142,9 @@ onMounted(() => {
           <select
             v-model.number="form.category_id"
             class="select select-bordered w-full"
+            :class="
+              clientFieldErrors.category_id || serverFieldErrors?.category_id ? 'select-error' : ''
+            "
             :disabled="submitting || categoryStore.loading"
           >
             <option disabled :value="0">Select a category group…</option>
@@ -142,8 +153,14 @@ onMounted(() => {
               {{ g.name }}
             </option>
           </select>
-          <label v-if="categoryError" class="label">
-            <span class="label-text-alt text-error">{{ categoryError }}</span>
+
+          <label
+            v-if="clientFieldErrors.category_id || serverFieldErrors?.category_id"
+            class="label"
+          >
+            <span class="label-text-alt text-error">{{
+              clientFieldErrors.category_id || serverFieldErrors?.category_id
+            }}</span>
           </label>
 
           <label v-if="categoryStore.error" class="label">

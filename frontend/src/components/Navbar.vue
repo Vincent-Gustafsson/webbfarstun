@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 </script>
 
 <template>
@@ -51,6 +52,7 @@ import { RouterLink } from 'vue-router'
       <div class="flex-none flex items-center gap-2">
         <RouterLink to="/account" class="btn btn-ghost whitespace-nowrap">Login</RouterLink>
         <RouterLink to="/cart" class="btn btn-primary whitespace-nowrap">Cart</RouterLink>
+        <ThemeToggle />
       </div>
     </div>
   </div>
