@@ -4,10 +4,13 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import HomeView from '@/views/HomeView.vue'
 import CategoryView from '@/views/CategoryView.vue'
 import ProductView from '@/views/ProductView.vue'
+import UserRegisterView from '@/views/UserRegisterView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
 import AdminCreateProductView from '@/views/admin/AdminCreateProductView.vue'
 import AdminCategoryView from '@/views/admin/AdminCategoryView.vue'
 import AdminProductGroupView from '@/views/admin/AdminCreateProductGroupView.vue'
+import AdminCategoryListView from '@/views/admin/AdminCategoryListView.vue'
+import AdminCategoryUpdate from '@/views/admin/AdminCategoryUpdateView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -36,6 +39,12 @@ const router = createRouter({
     },
 
     {
+      path: '/account',
+      name: 'account',
+      component: UserRegisterView,
+    },
+
+    {
       path: '/admin',
       component: AdminLayout,
       children: [
@@ -58,6 +67,17 @@ const router = createRouter({
           path: 'categories',
           name: 'admin-categories',
           component: AdminCategoryView,
+        },
+        {
+          path: 'list/categories',
+          name: 'admin-category-list',
+          component: AdminCategoryListView,
+        },
+        {
+          path: 'categories/:category_id/update',
+          name: 'admin-category-update',
+          component: AdminCategoryUpdate,
+          props: true,
         },
       ],
     },
