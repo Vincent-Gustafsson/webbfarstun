@@ -184,10 +184,6 @@ class UserBase(SQLModel):
     is_active: bool = True
 
 
-class UserCreate(UserBase):
-    email: str = Field(unique=True)
-
-
 class UserPublic(SQLModel):
     id: int
     email: EmailStr
@@ -205,7 +201,6 @@ class UserRegister(SQLModel):
 
 class UserUpdate(SQLModel):
     name: str | None = None
-    password_hash: str | None = None
     is_admin: bool | None = None
     is_employee: bool | None = None
     is_active: bool | None = None

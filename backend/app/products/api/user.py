@@ -16,7 +16,7 @@ from ...auth.passwords import hash_password, verify_password
 from ...auth.tokens import create_access_token
 from ...db import get_session
 from ..models import User
-from ..schemas import TokenOut, UserCreate, UserPublic, UserRegister, UserUpdate
+from ..schemas import TokenOut, UserPublic, UserRegister, UserUpdate
 
 router = APIRouter(tags=["users"])
 
@@ -27,7 +27,9 @@ router = APIRouter(tags=["users"])
 def register(payload: UserRegister, session: Session = Depends(get_session)):
     existing = session.exec(select(User).where(User.email == payload.email)).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=400, detail={"errors": {"Email": "Email already registered"}}
+        )
 
     user = User(
         email=payload.email,
@@ -43,7 +45,9 @@ def register(payload: UserRegister, session: Session = Depends(get_session)):
         session.commit()
     except IntegrityError:
         session.rollback()
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=400, detail={"errors": {"Email": "Email already registered"}}
+        )
 
     session.refresh(user)
     return user
@@ -58,11 +62,13 @@ def login(
     user = session.exec(select(User).where(User.email == form.username)).first()
     if not user or not verify_password(form.password, user.password_hash):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad credentials"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"errors": {"Credentials": "Invalid credentials"}},
         )
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"errors": {"is_active": "Inactive user"}},
         )
 
     token = create_access_token(user_id=user.id)
@@ -115,3 +121,37 @@ def get_user(*, user_id: int, session: Session = Depends(get_session)):
             status_code=404, detail={"errors": {"user": "User not found"}}
         )
     return user
+
+
+@router.patch("/users/{user_id}", response_model=UserPublic)
+def update_user(
+    *,
+    user_id: int,
+    user_data: UserUpdate,
+    session: Session = Depends(get_session),
+):
+    db_user = session.get(User, user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=404, detail={"errors": {"user": "User not found"}}
+        )
+
+    update_dict = user_data.model_dump(exclude_unset=True)
+
+    db_user.sqlmodel_update(update_dict)
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+    return db_user
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(*, user_id: int, session: Session = Depends(get_session)):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404, detail={"errors": {"user": "User not found"}}
+        )
+    session.delete(user)
+    session.commit()
+    return None
