@@ -209,3 +209,5 @@ __marimo__/
 pyrightconfig.json
 
 node_modules/
+
+media/
