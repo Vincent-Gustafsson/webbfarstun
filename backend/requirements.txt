@@ -4,3 +4,6 @@ psycopg2-binary
 httpx
 pytest
 python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+argon2-cffi
