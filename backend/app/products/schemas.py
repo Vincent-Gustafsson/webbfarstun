@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from pydantic import EmailStr
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm.base import PASSIVE_NO_RESULT
@@ -187,9 +188,19 @@ class UserCreate(UserBase):
     email: str = Field(unique=True)
 
 
-class UserPublic(UserBase):
+class UserPublic(SQLModel):
     id: int
-    email: str
+    email: EmailStr
+    name: str | None
+    is_admin: bool
+    is_employee: bool
+    is_active: bool
+
+
+class UserRegister(SQLModel):
+    email: EmailStr
+    password: str
+    name: str | None = None
 
 
 class UserUpdate(SQLModel):
@@ -279,3 +290,8 @@ class ShoppingCartItemUpdate(SQLModel):
     product_id: int | None = None
     shopping_cart_id: int | None = None
     qty: int | None = None
+
+
+class TokenOut(SQLModel):
+    access_token: str
+    token_type: str = "bearer"

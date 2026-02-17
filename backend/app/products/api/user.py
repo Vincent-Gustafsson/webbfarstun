@@ -1,27 +1,73 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import Session, select
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import EmailStr
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, SQLModel, select
 
+from ...auth.deps import get_current_user
+from ...auth.passwords import hash_password, verify_password
+from ...auth.tokens import create_access_token
 from ...db import get_session
 from ..models import User
-from ..schemas import UserCreate, UserPublic, UserUpdate
+from ..schemas import TokenOut, UserCreate, UserPublic, UserRegister, UserUpdate
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(tags=["users"])
 
 
-@router.post("/", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
-def create_user(*, session: Session = Depends(get_session), user_data: UserCreate):
-    existing = session.exec(select(User).where(User.email == user_data.email)).first()
+@router.post(
+    "/auth/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED
+)
+def register(payload: UserRegister, session: Session = Depends(get_session)):
+    existing = session.exec(select(User).where(User.email == payload.email)).first()
     if existing:
-        raise HTTPException(status_code=400,  detail={"errors": {"email": "Email already exists"}})
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-    db_user = User.model_validate(user_data)
-    session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
-    return db_user
+    user = User(
+        email=payload.email,
+        name=payload.name,
+        password_hash=hash_password(payload.password),
+        is_admin=False,
+        is_employee=False,
+        is_active=True,
+    )
+    session.add(user)
+
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    session.refresh(user)
+    return user
 
 
-@router.get("/", response_model=list[UserPublic])
+@router.post("/auth/login", response_model=TokenOut)
+def login(
+    form: OAuth2PasswordRequestForm = Depends(),
+    session: Session = Depends(get_session),
+):
+    # OAuth2PasswordRequestForm uses "username" field; we treat it as email
+    user = session.exec(select(User).where(User.email == form.username)).first()
+    if not user or not verify_password(form.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad credentials"
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user"
+        )
+
+    token = create_access_token(user_id=user.id)
+    return TokenOut(access_token=token)
+
+
+@router.get("/users/me", response_model=UserPublic)
+def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.get("/users/", response_model=list[UserPublic])
 def get_users(
     *,
     session: Session = Depends(get_session),
@@ -32,47 +78,11 @@ def get_users(
     return users
 
 
-@router.get("/{user_id}", response_model=UserPublic)
+@router.get("/users/{user_id}", response_model=UserPublic)
 def get_user(*, user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404,  detail={"errors": {"user": "User not found"}})
+        raise HTTPException(
+            status_code=404, detail={"errors": {"user": "User not found"}}
+        )
     return user
-
-
-@router.patch("/{user_id}", response_model=UserPublic)
-def update_user(
-    *,
-    user_id: int,
-    user_data: UserUpdate,
-    session: Session = Depends(get_session),
-):
-    db_user = session.get(User, user_id)
-    if not db_user:
-        raise HTTPException(status_code=404,  detail={"errors": {"user": "User not found"}})
-
-    update_dict = user_data.model_dump(exclude_unset=True)
-
-    # Optional: enforce email uniqueness if you allow updating email
-    # if "email" in update_dict:
-    #     existing = session.exec(
-    #         select(User).where(User.email == update_dict["email"], User.id != user_id)
-    #     ).first()
-    #     if existing:
-    #         raise HTTPException(status_code=400, detail="Email already exists")
-
-    db_user.sqlmodel_update(update_dict)
-    session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
-    return db_user
-
-
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(*, user_id: int, session: Session = Depends(get_session)):
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=404,  detail={"errors": {"user": "User not found"}})
-    session.delete(user)
-    session.commit()
-    return None
