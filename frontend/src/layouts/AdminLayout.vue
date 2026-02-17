@@ -5,15 +5,18 @@ import { useRoute, RouterLink, RouterView } from 'vue-router'
 const route = useRoute()
 
 const title = computed(() => {
-  return (route.meta?.title as string) ?? 'Admin'
+  return (route.meta?.title as string) ?? 'Shop Panel'
 })
 
-const links = [
-  { to: '/admin', label: 'Dashboard', tip: 'Dashboard' },
-  { to: '/admin/products', label: 'Create Products', tip: 'Products' },
-  { to: '/admin/categories', label: 'Create categories', tip: 'Categories' },
-  { to: '/admin/product-groups', label: 'Create product groups', tip: 'Product Groups' },
+const nav = [{ to: '/admin', label: 'Dashboard' }]
+
+const createLinks = [
+  { to: '/admin/products', label: 'Products' },
+  { to: '/admin/categories', label: 'Categories' },
+  { to: '/admin/product-groups', label: 'Product groups' },
 ]
+
+const UpdateLinks = [{ to: '/admin/list/categories', label: 'Categories' }]
 </script>
 
 <template>
@@ -45,7 +48,7 @@ const links = [
 
         <div class="flex-1 px-4">
           <div class="font-semibold text-lg leading-none">{{ title }}</div>
-          <div class="text-xs opacity-60">Admin panel</div>
+          <div class="text-xs opacity-60">Shop panel</div>
         </div>
       </nav>
 
@@ -60,23 +63,67 @@ const links = [
       <label for="admin-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
 
       <aside class="w-64 bg-base-200 min-h-full border-r border-base-content/10">
-        <div class="px-4 py-4">
-          <div class="font-bold text-lg">Admin</div>
+        <div class="px-4 py-4 text-center">
+          <div class="font-bold text-lg">Manage</div>
           <div class="text-xs opacity-60">Navigation</div>
         </div>
 
-        <div class="px-3 pb-4">
-          <ul class="menu menu-md gap-1">
-            <li v-for="l in links" :key="l.to">
+        <div class="px-3 pb-6 flex justify-center">
+          <ul class="menu menu-md gap-2 w-full max-w-[14rem]">
+            <!-- Dashboard -->
+            <li v-for="l in nav" :key="l.to">
               <RouterLink
                 :to="l.to"
-                class="rounded-lg px-3 py-2 hover:bg-base-300 transition"
+                class="rounded-lg px-3 py-2 justify-center text-center hover:bg-base-300 transition"
                 :class="{
                   'bg-primary text-primary-content hover:bg-primary/90': $route.path === l.to,
                 }"
               >
                 <span class="font-medium">{{ l.label }}</span>
               </RouterLink>
+            </li>
+
+            <!-- Create dropdown -->
+            <li>
+              <details open class="w-full">
+                <summary class="justify-center text-center font-semibold">Create</summary>
+
+                <ul class="mt-2 gap-2">
+                  <li v-for="l in createLinks" :key="l.to">
+                    <RouterLink
+                      :to="l.to"
+                      class="rounded-lg px-3 py-2 justify-center text-center hover:bg-base-300 transition"
+                      :class="{
+                        'bg-primary text-primary-content hover:bg-primary/90':
+                          $route.path.startsWith(l.to),
+                      }"
+                    >
+                      <span class="font-medium"> {{ l.label }}</span>
+                    </RouterLink>
+                  </li>
+                </ul>
+              </details>
+            </li>
+            <!-- Update dropdown -->
+            <li>
+              <details open class="w-full">
+                <summary class="justify-center text-center font-semibold">List</summary>
+
+                <ul class="mt-2 gap-2">
+                  <li v-for="l in UpdateLinks" :key="l.to">
+                    <RouterLink
+                      :to="l.to"
+                      class="rounded-lg px-3 py-2 justify-center text-center hover:bg-base-300 transition"
+                      :class="{
+                        'bg-primary text-primary-content hover:bg-primary/90':
+                          $route.path.startsWith(l.to),
+                      }"
+                    >
+                      <span class="font-medium"> {{ l.label }}</span>
+                    </RouterLink>
+                  </li>
+                </ul>
+              </details>
             </li>
           </ul>
         </div>

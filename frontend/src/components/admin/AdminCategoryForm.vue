@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { reactive, watch, computed, onMounted, ref } from 'vue'
-import type { CategoryCreate } from '@/types/admin/adminCategory'
+import type { Category, CategoryCreate, CategoryUpdate } from '@/types/admin/adminCategory'
 import { useCategoryStore } from '@/stores/admin/adminCategory'
+import { watchEffect } from 'vue'
 
 const props = defineProps<{
+  mode?: 'create' | 'update'
+  category?: Category | null
   submitting?: boolean
   generalError?: string | null
   serverFieldErrors?: Partial<Record<keyof CategoryCreate, string>>
@@ -12,6 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'create', payload: CategoryCreate): void
+  (e: 'update', payload: CategoryUpdate): void
   (e: 'cancel'): void
   (e: 'clear-error'): void
 }>()
@@ -63,27 +67,41 @@ watch(
 
 function onSubmit() {
   emit('clear-error')
+  if (!validate()) return
 
-  if (!validate()) {
-    submitted.value = false
-    return
+  if (props.mode === 'update') {
+    const payload: CategoryUpdate = {
+      name: form.name,
+      description: form.description,
+      is_container: form.is_container,
+      category_parent_id: form.category_parent_id ?? undefined,
+    }
+    emit('update', payload)
+  } else {
+    const payload: CategoryCreate = {
+      name: form.name,
+      description: form.description,
+      is_container: form.is_container,
+      ...(form.category_parent_id != null ? { category_parent_id: form.category_parent_id } : {}),
+    } as any
+    emit('create', payload)
   }
-
-  submitted.value = true
-
-  const payload: CategoryCreate = {
-    name: form.name,
-    description: form.description,
-    is_container: form.is_container,
-    ...(form.category_parent_id != null ? { category_parent_id: form.category_parent_id } : {}),
-  } as any
-
-  emit('create', payload)
 }
 
 const categoryStore = useCategoryStore()
 onMounted(() => {
   categoryStore.fetchAll?.()
+})
+
+//Update form mode
+
+watchEffect(() => {
+  if (props.mode === 'update' && props.category) {
+    form.name = props.category.name ?? ''
+    form.description = props.category.description ?? ''
+    form.category_parent_id = props.category.category_parent_id ?? (null as any)
+    form.is_container = !!props.category.is_container
+  }
 })
 </script>
 
@@ -91,7 +109,10 @@ onMounted(() => {
   <form @submit.prevent="onSubmit" class="card bg-base-100 shadow-xl max-w-3xl">
     <div class="card-body space-y-6">
       <header class="space-y-1">
-        <h2 class="card-title text-2xl">Create Category</h2>
+        <h2 class="card-title text-2xl">
+          {{ props.mode === 'update' ? 'Update Category' : 'Create Category' }}
+        </h2>
+
         <p v-if="createdCategoryId" class="text-sm opacity-70">
           Category created. You can now add variations and options below.
         </p>
@@ -178,7 +199,7 @@ onMounted(() => {
         <button type="button" class="btn btn-ghost" @click="emit('cancel')">Cancel</button>
         <button type="submit" class="btn btn-primary" :disabled="submitting">
           <span v-if="submitting" class="loading loading-spinner loading-sm"></span>
-          {{ submitting ? 'Saving…' : 'Create category' }}
+          {{ submitting ? 'Saving…' : 'Submit' }}
         </button>
       </footer>
     </div>

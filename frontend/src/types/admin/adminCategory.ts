@@ -7,7 +7,6 @@ export interface Category {
 }
 
 export interface CategoryCreate {
-  id: number
   name: string
   description?: string
   category_parent_id?: number

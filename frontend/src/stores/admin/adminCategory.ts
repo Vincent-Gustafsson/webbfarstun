@@ -12,6 +12,7 @@ export const useCategoryStore = defineStore('category', {
     fieldErrors: {} as Partial<Record<keyof CategoryCreate, string>>,
     lastFetched: null as number | null,
     createdId: null as number | null,
+    currentCategory: null as Category | null,
   }),
 
   getters: {},
@@ -34,6 +35,27 @@ export const useCategoryStore = defineStore('category', {
       try {
         this.categories = await adminCategoryService.getAll()
         this.lastFetched = now
+      } catch (err: unknown) {
+        this.error = getErrorMessage(err)
+        console.error(err)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchById(id: number) {
+      this.loading = true
+      this.error = null
+
+      try {
+        const category = await adminCategoryService.getOne(id)
+        this.currentCategory = category
+
+        const i = this.categories.findIndex((c) => c.id === id)
+        if (i !== -1) this.categories[i] = category
+        else this.categories.push(category)
+
+        return category
       } catch (err: unknown) {
         this.error = getErrorMessage(err)
         console.error(err)
