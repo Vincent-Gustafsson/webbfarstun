@@ -1,59 +1,74 @@
 <script setup lang="ts">
-import { reactive, watch, computed, onMounted, ref } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
 import type { ProductGroupCreate } from '@/types/admin/adminCreateProductGroup'
 import { useCategoryStore } from '@/stores/admin/adminCategory'
+import ProductGroupVariationsPicker from '@/components/admin/AdminCreateProductGroupAddVariations.vue'
 
 const props = defineProps<{
   submitting?: boolean
   generalError?: string | null
-  serverFieldErrors?: Partial<Record<keyof ProductGroupCreate, string>>
-  categoryId: number
+  serverFieldErrors?: Partial<Record<string, string>>
 }>()
 
 const emit = defineEmits<{
+  (e: 'create', payload: ProductGroupCreate): void
+  (e: 'cancel'): void
   (e: 'clear-error'): void
-  (e: 'update:categoryId', value: number): void
 }>()
+
+const categoryStore = useCategoryStore()
 
 const defaults = () => ({
   name: '',
-  categoryId: 0,
+  category_id: 0,
 })
 
 const form = reactive(defaults())
 const submitted = ref(false)
 
-const clientFieldErrors = ref<Partial<Record<keyof ProductGroupCreate, string>>>({})
+const clientFieldErrors = ref<Partial<Record<'name' | 'category_id' | 'variation_ids', string>>>({})
+
 const hasServerFieldErrors = computed(
   () => !!props.serverFieldErrors && Object.keys(props.serverFieldErrors).length > 0,
 )
 
-const categoryStore = useCategoryStore()
+const pickerRef = ref<InstanceType<typeof ProductGroupVariationsPicker> | null>(null)
 
-const categoryModel = computed<number>({
-  get: () => props.categoryId,
-  set: (v) => emit('update:categoryId', v),
-})
-
-function validate() {
+function validateBasics() {
   const e: typeof clientFieldErrors.value = {}
+
   if (form.name.trim().length < 3) e.name = 'Name must be at least 3 characters'
-  if (!categoryModel.value || categoryModel.value <= 0) e.category_id = 'Please select a category'
+  if (!form.category_id || form.category_id <= 0) e.category_id = 'Please select a category'
+
   clientFieldErrors.value = e
   return Object.keys(e).length === 0
 }
 
-function getPayload() {
-  return {
-    name: form.name,
-    description: form.description,
-    category_id: categoryModel.value,
-  } as Pick<ProductGroupCreate, 'name' | 'description' | 'category_id'>
-}
-
 function resetForm() {
   Object.assign(form, defaults())
-  categoryModel.value = 0
+}
+
+function onSubmit() {
+  emit('clear-error')
+
+  const okBasics = validateBasics()
+  const okPicker = pickerRef.value?.validate?.() ?? true
+  if (!okBasics || !okPicker) {
+    submitted.value = false
+    return
+  }
+
+  submitted.value = true
+
+  const variation_ids = pickerRef.value?.getVariationIds?.() ?? []
+
+  const payload: ProductGroupCreate = {
+    name: form.name.trim(),
+    category_id: form.category_id,
+    variation_ids,
+  }
+
+  emit('create', payload)
 }
 
 watch(
@@ -76,7 +91,7 @@ watch(
 )
 
 watch(
-  () => categoryModel.value,
+  () => form.category_id,
   (catId) => {
     if (clientFieldErrors.value.category_id && catId > 0) {
       clientFieldErrors.value = { ...clientFieldErrors.value, category_id: undefined }
@@ -87,16 +102,10 @@ watch(
 onMounted(() => {
   categoryStore.fetchAll?.()
 })
-
-defineExpose({
-  validate,
-  getPayload,
-  resetForm,
-})
 </script>
 
 <template>
-  <div class="card bg-base-100 shadow-xl max-w-3xl">
+  <form @submit.prevent="onSubmit" class="card bg-base-100 shadow-xl max-w-3xl">
     <div class="card-body space-y-6">
       <header class="space-y-1">
         <h2 class="card-title text-2xl">Create Product Group</h2>
@@ -114,7 +123,13 @@ defineExpose({
             class="input input-bordered flex items-center gap-2"
             :class="clientFieldErrors.name || serverFieldErrors?.name ? 'input-error' : ''"
           >
-            <input v-model="form.name" type="text" placeholder="e.g. iPhone 16 Series" />
+            <input
+              v-model="form.name"
+              type="text"
+              placeholder="e.g. iPhone 16 Series"
+              :disabled="submitting"
+              @input="emit('clear-error')"
+            />
           </label>
           <label v-if="clientFieldErrors.name || serverFieldErrors?.name" class="label">
             <span class="label-text-alt text-error">
@@ -128,7 +143,7 @@ defineExpose({
           <label class="label"><span class="label-text">Category</span></label>
 
           <select
-            v-model.number="categoryModel"
+            v-model.number="form.category_id"
             class="select select-bordered w-full"
             :class="
               clientFieldErrors.category_id || serverFieldErrors?.category_id ? 'select-error' : ''
@@ -152,6 +167,31 @@ defineExpose({
           </label>
         </div>
       </div>
+
+      <!-- Variations-->
+      <div class="divider my-0">Variations</div>
+
+      <ProductGroupVariationsPicker
+        ref="pickerRef"
+        :category-id="form.category_id"
+        :disabled="!!submitting"
+        embedded
+      />
+
+      <div v-if="serverFieldErrors?.variation_ids" class="alert alert-error">
+        <span>{{ serverFieldErrors.variation_ids }}</span>
+      </div>
+
+      <footer class="card-actions justify-end gap-2">
+        <button type="button" class="btn btn-ghost" @click="emit('cancel')" :disabled="submitting">
+          Cancel
+        </button>
+
+        <button type="submit" class="btn btn-primary" :disabled="submitting">
+          <span v-if="submitting" class="loading loading-spinner loading-sm"></span>
+          {{ submitting ? 'Saving…' : 'Create' }}
+        </button>
+      </footer>
     </div>
-  </div>
+  </form>
 </template>

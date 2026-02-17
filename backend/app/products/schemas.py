@@ -137,7 +137,6 @@ class ProductConfigUpdate(ProductConfigBase):
 
 
 class ProductConfigPublic(ProductConfigBase):
-    id: int
     variation_option_id: int
     product_id: int
 

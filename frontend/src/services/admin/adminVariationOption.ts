@@ -7,7 +7,7 @@ import type {
 
 export default {
   async getAll() {
-    return http.get<VariationOption[]>('/variation-options')
+    return http.get<VariationOption[]>('/variation-options/')
   },
 
   async getOne(id: number) {

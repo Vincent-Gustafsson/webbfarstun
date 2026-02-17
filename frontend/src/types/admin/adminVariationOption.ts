@@ -4,9 +4,11 @@ export interface VariationOption {
 }
 
 export interface VariationOptionCreate {
+  value: string
   variation_id?: number
 }
 
 export interface VariationOptionUpdate {
-  value: string
+  value?: string
+  variation_id?: number
 }

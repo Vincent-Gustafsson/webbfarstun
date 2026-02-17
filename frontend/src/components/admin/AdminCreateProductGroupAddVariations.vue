@@ -5,6 +5,7 @@ import { useVariationStore } from '@/stores/admin/adminVariation'
 const props = defineProps<{
   categoryId: number
   disabled?: boolean
+  embedded?: boolean
 }>()
 
 type VariationRow = { variation_id: number }
@@ -30,7 +31,6 @@ function removeRow(i: number) {
 }
 
 function validate() {
-  // variations are OPTIONAL
   if (rows.value.length === 0) {
     rowErrors.value = {}
     return true
@@ -38,14 +38,43 @@ function validate() {
 
   const errs: Record<number, string> = {}
 
-  const counts = new Map<number, number>()
+  const idToName = new Map<number, string>()
+  filteredVariations.value.forEach((v: any) => {
+    idToName.set(
+      v.id,
+      String(v.name ?? '')
+        .trim()
+        .toLowerCase(),
+    )
+  })
+
+  const countsById = new Map<number, number>()
+  const countsByName = new Map<string, number>()
+
   rows.value.forEach((r) => {
-    if (r.variation_id > 0) counts.set(r.variation_id, (counts.get(r.variation_id) ?? 0) + 1)
+    if (r.variation_id > 0) {
+      countsById.set(r.variation_id, (countsById.get(r.variation_id) ?? 0) + 1)
+      const nm = idToName.get(r.variation_id)
+      if (nm) countsByName.set(nm, (countsByName.get(nm) ?? 0) + 1)
+    }
   })
 
   rows.value.forEach((r, i) => {
-    if (r.variation_id <= 0) errs[i] = 'Please select a variation'
-    else if ((counts.get(r.variation_id) ?? 0) > 1) errs[i] = 'This variation is already selected'
+    if (r.variation_id <= 0) {
+      errs[i] = 'Please select a variation'
+      return
+    }
+
+    if ((countsById.get(r.variation_id) ?? 0) > 1) {
+      errs[i] = 'This variation is already selected'
+      return
+    }
+
+    const nm = idToName.get(r.variation_id)
+    if (nm && (countsByName.get(nm) ?? 0) > 1) {
+      errs[i] = 'A variation with this name is already selected'
+      return
+    }
   })
 
   rowErrors.value = errs
@@ -77,7 +106,6 @@ onMounted(() => {
   variationStore.fetchAll?.()
 })
 
-// parent can call these on submit
 defineExpose({
   validate,
   getVariationIds,
@@ -85,10 +113,10 @@ defineExpose({
 </script>
 
 <template>
-  <div class="card bg-base-100 shadow-xl max-w-3xl">
-    <div class="card-body space-y-4">
+  <div :class="embedded ? '' : 'card bg-base-100 shadow-xl max-w-3xl'">
+    <div :class="embedded ? 'space-y-4' : 'card-body space-y-4'">
       <div class="flex items-center justify-between">
-        <h3 class="card-title text-xl">Variations</h3>
+        <h3 v-if="!embedded" class="card-title text-xl">Variations</h3>
 
         <button
           type="button"
@@ -107,10 +135,6 @@ defineExpose({
 
       <div v-else-if="filteredVariations.length === 0" class="text-sm opacity-70">
         This category has no variations.
-      </div>
-
-      <div v-else-if="rows.length === 0" class="text-sm opacity-70">
-        No variations added (optional). Click + to add.
       </div>
 
       <div class="space-y-2">

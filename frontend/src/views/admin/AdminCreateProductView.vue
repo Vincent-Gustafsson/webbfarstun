@@ -1,20 +1,41 @@
 <script setup lang="ts">
-import ProductForm from '@/components/admin/AdminCreateProduct.vue'
+import { ref } from 'vue'
+import AdminCreateProductForm from '@/components/admin/AdminCreateProductForm.vue'
+import AdminCreateProductVariationOptionsPicker from '@/components/admin/AdminCreateProductAndVariationOptionsPicker.vue'
 import { useProductStore } from '@/stores/admin/adminCreateProduct'
 
 const productStore = useProductStore()
+
+const productGroupId = ref(0)
+const optionIds = ref<number[]>([])
+
+function clearError() {
+  productStore.error = null
+  productStore.fieldErrors = {}
+}
 </script>
 
 <template>
   <main class="p-4">
-    <ProductForm
+    <AdminCreateProductForm
+      v-model:product-group-id="productGroupId"
+      :variation-option-ids="optionIds"
       :submitting="productStore.loading"
       :general-error="productStore.error"
       :server-field-errors="productStore.fieldErrors"
-      @clear-error="productStore.error"
+      @clear-error="clearError"
       @create="productStore.create"
       @cancel="$router.push('/')"
-    />
+    >
+      <template #options>
+        <div class="divider my-2"></div>
+
+        <AdminCreateProductVariationOptionsPicker
+          v-model="optionIds"
+          :product-group-id="productGroupId"
+          :disabled="productStore.loading"
+        />
+      </template>
+    </AdminCreateProductForm>
   </main>
 </template>
-D
