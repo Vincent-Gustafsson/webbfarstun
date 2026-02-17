@@ -39,7 +39,7 @@ def create_product_group(
     session.commit()
     session.refresh(db_product_group)
 
-    variation_ids = list(dict.fromkeys(product_data.variation_ids))  # remove duplicates
+    variation_ids = list(dict.fromkeys(product_data.variation_ids))
 
     if variation_ids:
         variations = session.exec(
@@ -74,12 +74,7 @@ def create_product_group(
         )
         session.commit()
 
-    return ProductGroupPublic(
-        id=db_product_group.id,
-        name=db_product_group.name,
-        category_id=db_product_group.category_id,
-        variation_ids=variation_ids,
-    )
+    return db_product_group
 
 
 @router.get("/", response_model=list[ProductGroupPublic])
