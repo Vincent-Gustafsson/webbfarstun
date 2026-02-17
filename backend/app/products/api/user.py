@@ -1,9 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, SQLModel, select
 
+from ...auth.config import (
+    COOKIE_MAX_AGE,
+    COOKIE_NAME,
+    COOKIE_PATH,
+    COOKIE_SAMESITE,
+    COOKIE_SECURE,
+)
 from ...auth.deps import get_current_user
 from ...auth.passwords import hash_password, verify_password
 from ...auth.tokens import create_access_token
@@ -44,10 +51,10 @@ def register(payload: UserRegister, session: Session = Depends(get_session)):
 
 @router.post("/auth/login", response_model=TokenOut)
 def login(
+    response: Response,
     form: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
 ):
-    # OAuth2PasswordRequestForm uses "username" field; we treat it as email
     user = session.exec(select(User).where(User.email == form.username)).first()
     if not user or not verify_password(form.password, user.password_hash):
         raise HTTPException(
@@ -59,7 +66,29 @@ def login(
         )
 
     token = create_access_token(user_id=user.id)
+
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,  # "lax"
+        path=COOKIE_PATH,
+        max_age=COOKIE_MAX_AGE,
+    )
+
     return TokenOut(access_token=token)
+
+
+@router.post("/auth/logout")
+def logout(response: Response):
+    response.delete_cookie(
+        key=COOKIE_NAME,
+        path=COOKIE_PATH,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+    )
+    return {"ok": True}
 
 
 @router.get("/users/me", response_model=UserPublic)

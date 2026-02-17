@@ -6,3 +6,13 @@ if not SECRET_KEY:
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+
+
+COOKIE_NAME = "access_token"
+COOKIE_SAMESITE = "lax"
+
+# Dev -> COOKIE_SECURE=false
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+
+COOKIE_PATH = "/"
+COOKIE_MAX_AGE = ACCESS_TOKEN_EXPIRE_MINUTES * 60
