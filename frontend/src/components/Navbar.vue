@@ -1,6 +1,23 @@
 <script setup lang="ts">
+import { computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import { useRouter } from 'vue-router'
+import { userStore } from '@/stores/user'
+
+const router = useRouter()
+const accountStore = userStore()
+
+const isLoggedIn = computed(() => accountStore.isLoggedIn)
+
+async function logout() {
+  await accountStore.logout()
+  router.push('/')
+}
+
+onMounted(() => {
+  accountStore.fetchMe?.()
+})
 </script>
 
 <template>
@@ -50,7 +67,12 @@ import ThemeToggle from '@/components/ThemeToggle.vue'
 
       <!-- Right -->
       <div class="flex-none flex items-center gap-2">
-        <RouterLink to="/account" class="btn btn-ghost whitespace-nowrap">Login</RouterLink>
+        <RouterLink v-if="!isLoggedIn" to="/account/login" class="btn btn-ghost whitespace-nowrap">
+          Login
+        </RouterLink>
+        <button v-else class="btn btn-ghost whitespace-nowrap" type="button" @click="logout">
+          Logout
+        </button>
         <RouterLink to="/cart" class="btn btn-primary whitespace-nowrap">Cart</RouterLink>
         <ThemeToggle />
       </div>
