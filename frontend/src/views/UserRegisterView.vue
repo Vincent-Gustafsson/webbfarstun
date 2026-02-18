@@ -4,19 +4,17 @@ import { userStore } from '@/stores/user'
 import type { UserRegister } from '@/types/user'
 
 const store = userStore()
-
-async function register(payload: UserRegister) {
-  await store.register(payload)
-}
 </script>
 
 <template>
-  <UserRegisterForm
-    :submitting="store.submitting"
-    :generalError="store.generalError"
-    :serverFieldErrors="store.fieldErrors"
-    @create="register"
-    @clear-error="store.clearErrors"
-    @cancel="$router.push('/')"
-  />
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <UserRegisterForm
+      :submitting="store.loading"
+      :generalError="store.generalError"
+      :serverFieldErrors="store.fieldErrors"
+      @create="store.create"
+      @clear-error="store.clearErrors"
+      @cancel="$router.push('/')"
+    />
+  </div>
 </template>

@@ -22,3 +22,8 @@ export interface UserUpdate {
   is_employee?: boolean
   is_active?: boolean
 }
+
+export interface UserLogin {
+  email: string
+  password: string
+}

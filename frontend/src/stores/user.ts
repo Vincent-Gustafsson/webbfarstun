@@ -6,13 +6,17 @@ import { getErrorMessage } from '@/utils/error'
 export const userStore = defineStore('user', {
   state: () => ({
     users: [] as User[],
+    me: null as User | null,
+    authChecked: false,
     loading: false,
     error: null as string | null,
     fieldErrors: {} as Partial<Record<keyof UserRegister, string>>,
     lastFetched: null as number | null,
   }),
 
-  getters: {},
+  getters: {
+    isLoggedIn: (s) => !!s.me,
+  },
 
   actions: {
     async fetchAll(force = false) {
@@ -77,6 +81,47 @@ export const userStore = defineStore('user', {
       } catch (err: unknown) {
         this.error = getErrorMessage(err)
         console.error(err)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async login(payload: { email: string; password: string }) {
+      this.loading = true
+      this.error = null
+
+      try {
+        await userServices.login(payload.email, payload.password)
+        this.me = await userServices.me()
+      } catch (err: unknown) {
+        this.error = getErrorMessage(err)
+        this.me = null
+        console.error(err)
+      } finally {
+        this.loading = false
+        this.authChecked = true
+      }
+    },
+
+    async fetchMe() {
+      try {
+        this.me = await userServices.me()
+      } catch {
+        this.me = null
+      } finally {
+        this.authChecked = true
+      }
+    },
+
+    async logout() {
+      this.loading = true
+      this.error = null
+      try {
+        await userServices.logout()
+        this.me = null
+        this.authChecked = true
+      } catch (err: unknown) {
+        this.error = getErrorMessage(err)
       } finally {
         this.loading = false
       }

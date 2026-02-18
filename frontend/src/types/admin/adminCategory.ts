@@ -16,6 +16,6 @@ export interface CategoryCreate {
 export interface CategoryUpdate {
   name?: string
   description?: string
-  category_parent_id?: number
+  category_parent_id?: number 
   is_container?: boolean
 }

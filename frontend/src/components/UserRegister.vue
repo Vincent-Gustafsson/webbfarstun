@@ -32,6 +32,9 @@ const hasServerFieldErrors = computed(
 function validate() {
   const e: typeof clientFieldErrors.value = {}
   if (form.name.trim().length < 3) e.name = 'Name must be at least 3 characters'
+  if (!form.email.trim()) e.email = 'Email is required'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Email is not valid'
+
   if (form.email.trim().length < 3) e.email = 'Email must be at least 3 characters'
   if (form.password.trim().length < 3) e.password = 'Password must be at least 3 characters'
 
@@ -198,6 +201,9 @@ watch(
             uppercase letter
           </p>
         </div>
+        <RouterLink to="/account/login" class="link link-primary text-center">
+          Already have an account? Sign in
+        </RouterLink>
 
         <!-- Actions -->
         <div class="flex flex-col gap-2">

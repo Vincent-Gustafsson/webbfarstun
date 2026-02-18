@@ -11,12 +11,16 @@ function pickMessage(data: any, status: number) {
 }
 
 async function request<T>(url: string, config: RequestInit = {}): Promise<T> {
+  // Build headers without always forcing JSON (needed for form/login)
+  const headers = new Headers(config.headers || {})
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+
   const response = await fetch(`${API_BASE}${url}`, {
     ...config,
-    headers: {
-      'Content-Type': 'application/json',
-      ...config.headers,
-    },
+    credentials: 'include', 
+    headers,
   })
 
   const text = await response.text()
@@ -50,4 +54,11 @@ export const http = {
   patch: <T>(url: string, body: any) =>
     request<T>(url, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(url: string) => request<T>(url, { method: 'DELETE' }),
+
+  postForm: <T>(url: string, body: Record<string, string>) =>
+    request<T>(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(body).toString(),
+    }),
 }
