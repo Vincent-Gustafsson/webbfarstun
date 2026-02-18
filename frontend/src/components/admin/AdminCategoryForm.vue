@@ -74,7 +74,7 @@ function onSubmit() {
       name: form.name,
       description: form.description,
       is_container: form.is_container,
-      category_parent_id: form.category_parent_id ?? undefined,
+      category_parent_id: form.category_parent_id,
     }
     emit('update', payload)
   } else {
@@ -87,6 +87,7 @@ function onSubmit() {
     emit('create', payload)
   }
 }
+
 
 const categoryStore = useCategoryStore()
 onMounted(() => {

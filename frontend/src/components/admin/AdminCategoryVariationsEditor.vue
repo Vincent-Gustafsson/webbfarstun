@@ -14,7 +14,6 @@ const variationStore = useVariationStore()
 const variationOptionStore = useVariationOptionStore()
 const mode = computed(() => props.mode ?? 'create')
 
-
 type DraftOption = Pick<VariationOptionCreate, 'value'>
 
 type DraftVariation = Omit<VariationCreate, 'category_id'> & {
@@ -142,7 +141,6 @@ async function saveDraftOptions(v: DraftVariation) {
   }
 }
 
-
 const existingVariations = computed(() =>
   variationStore.variations.filter((v) => v.category_id === props.categoryId),
 )
@@ -158,7 +156,6 @@ type EditVariation = {
   saving: boolean
   error: string | null
   options: EditOption[]
-
 
   newOptions: DraftOption[]
   newOptionErrors: Record<number, string>

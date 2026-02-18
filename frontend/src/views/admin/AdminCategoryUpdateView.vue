@@ -8,14 +8,14 @@ import { useVariationOptionStore } from '@/stores/admin/adminVariationOption'
 import AdminCategoryForm from '@/components/admin/AdminCategoryForm.vue'
 import AdminCategoryVariationsEditor from '@/components/admin/AdminCategoryVariationsEditor.vue'
 
-const route = useRoute()
+const props = defineProps<{ category_id: string | number }>()
 const router = useRouter()
 
 const categoryStore = useCategoryStore()
 const variationStore = useVariationStore()
 const optionStore = useVariationOptionStore()
 
-const categoryId = computed(() => Number(route.params.category_id))
+const categoryId = computed(() => Number(props.category_id))
 const category = computed(() => categoryStore.currentCategory)
 
 function clearCategoryError() {
@@ -42,9 +42,8 @@ onMounted(async () => {
     :general-error="categoryStore.error"
     :server-field-errors="categoryStore.fieldErrors"
     @clear-error="clearCategoryError"
-    @cancel="router.push('/admin/categories/list')"
+    @cancel="router.push('/admin/list/categories')"
     @update="(payload) => categoryStore.update(categoryId, payload)"
   />
-
   <AdminCategoryVariationsEditor v-if="category" :category-id="category.id" mode="update" />
 </template>
