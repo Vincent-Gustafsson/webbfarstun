@@ -8,7 +8,7 @@ const props = defineProps<{
   generalError?: string | null
   serverFieldErrors?: Partial<Record<keyof ProductCreate, string>>
   productGroupId: number
-  variationOptionIds: number[] 
+  variationOptionIds: number[]
 }>()
 
 const emit = defineEmits<{
@@ -243,7 +243,7 @@ onMounted(() => {
           </div>
         </div>
       </div>
-      
+
       <div class="md:col-span-2">
         <slot name="options" />
       </div>

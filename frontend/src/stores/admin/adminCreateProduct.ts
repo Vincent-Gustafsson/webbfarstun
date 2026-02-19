@@ -10,6 +10,7 @@ export const useProductStore = defineStore('product', {
     error: null as string | null,
     fieldErrors: {} as Partial<Record<keyof ProductCreate, string>>,
     lastFetched: null as number | null,
+    createdId: null as number | null
   }),
 
   getters: {
@@ -46,10 +47,12 @@ export const useProductStore = defineStore('product', {
       this.loading = true
       this.error = null
       this.fieldErrors = {}
+      this.createdId = null
 
       try {
         const newProduct = await productService.create(payload)
         this.products.push(newProduct)
+        this.createdId = newProduct.id
         return newProduct
       } catch (err: any) {
         const data = err?.data
