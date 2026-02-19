@@ -1,3 +1,4 @@
+import os
 from unittest.mock import patch
 
 import pytest
@@ -7,6 +8,10 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from .db import get_session
 from .main import app
+
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret")
+os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
+os.environ.setdefault("COOKIE_SECURE", "false")
 
 # --- SQLite Setup for Tests ---
 sqlite_url = "sqlite:///:memory:"
