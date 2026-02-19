@@ -1,4 +1,4 @@
-const API_BASE = 'https://dev.webbfarstun.shop/api'
+const API_BASE = '/api'
 
 function pickMessage(data: any, status: number) {
   const detail = data?.detail
