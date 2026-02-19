@@ -18,7 +18,7 @@ onMounted(() => {
     <NavBar />
 
     <!-- Centered page container with bigger side margins -->
-    <div class="mx-50 px-6 py-4">
+    <div class="px-6 py-4">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
         <aside class="md:col-span-2">
           <div class="card bg-base-100 shadow">
