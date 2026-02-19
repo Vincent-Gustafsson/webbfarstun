@@ -1,10 +1,13 @@
 from datetime import datetime
+from typing import Any, Dict
 
 from pydantic import EmailStr
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm.base import PASSIVE_NO_RESULT
 from sqlalchemy.orm.state import PASSIVE_NO_INITIALIZE
+from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 
@@ -208,7 +211,14 @@ class UserUpdate(SQLModel):
 
 class ActionBase(SQLModel):
     type: str
-    meta: dict = Field(sa_type=JSONB)
+    meta: Dict[str, Any] = Field(
+        default_factory=dict,
+        sa_column=Column(
+            # JSON everywhere, but JSONB on Postgres
+            MutableDict.as_mutable(JSON().with_variant(JSONB, "postgresql")),
+            nullable=False,
+        ),
+    )
     at_time: datetime
 
 
@@ -221,10 +231,7 @@ class ActionPublic(ActionBase):
     user_id: int
 
 
-class ActionUpdate(SQLModel):
-    type: str | None = None
-    meta: dict | None = None
-    at_time: datetime | None = None
+class ActionUpdate(ActionBase): ...
 
 
 class ReviewBase(SQLModel):
