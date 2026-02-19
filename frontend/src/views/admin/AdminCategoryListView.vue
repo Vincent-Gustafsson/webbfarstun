@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AdminCategoryList from '@/components/admin/AdminCategoryList.vue'
-import { useCategoryStore } from '@/stores/admin/adminCategory'
 </script>
 
 <template>

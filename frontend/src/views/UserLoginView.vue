@@ -2,7 +2,6 @@
 import UserLogin from '@/components/UserLogin.vue'
 import { userStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
-import type { UserRegister } from '@/types/user'
 import { computed, watch } from 'vue'
 
 const store = userStore()

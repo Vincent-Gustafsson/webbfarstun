@@ -95,7 +95,6 @@ async function uploadAll() {
       p.error = err?.message ?? imageStore.error ?? 'Upload failed'
     }
   }
-
 }
 
 async function uploadOne(i: number) {

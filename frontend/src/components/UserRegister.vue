@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, watch, computed } from 'vue'
 import type { UserRegister } from '@/types/user'
-import { userStore } from '@/stores/user'
 
 const props = defineProps<{
   submitting?: boolean

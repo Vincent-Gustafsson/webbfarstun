@@ -2,7 +2,7 @@
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useCategoryStore } from '@/stores/category'
-import Navbar from '@/components/Navbar.vue'
+import NavBar from '@/components/NavBar.vue'
 import CategoryTree from '@/components/CategoryTree.vue'
 import CategoryPills from '@/components/CategoryPills.vue'
 
@@ -15,7 +15,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-base-200">
-    <Navbar />
+    <NavBar />
 
     <!-- Centered page container with bigger side margins -->
     <div class="mx-50 px-6 py-4">

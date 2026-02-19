@@ -10,7 +10,7 @@ export const useProductStore = defineStore('product', {
     error: null as string | null,
     fieldErrors: {} as Partial<Record<keyof ProductCreate, string>>,
     lastFetched: null as number | null,
-    createdId: null as number | null
+    createdId: null as number | null,
   }),
 
   getters: {

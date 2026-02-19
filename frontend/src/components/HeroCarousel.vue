@@ -27,13 +27,13 @@ const slides = [
         >
           <a
             class="btn btn-ghost btn-circle bg-transparent hover:bg-transparent active:bg-transparent border-none shadow-none"
-            :href="`#${slides[(idx - 1 + slides.length) % slides.length].id}`"
+            :href="`#${slides[(idx - 1 + slides.length) % slides.length]!.id}`"
           >
             ❮
           </a>
           <a
             class="btn btn-ghost btn-circle bg-transparent hover:bg-transparent active:bg-transparent border-none shadow-none"
-            :href="`#${slides[(idx + 1) % slides.length].id}`"
+            :href="`#${slides[(idx + 1) % slides.length]!.id}`"
           >
             ❯
           </a>

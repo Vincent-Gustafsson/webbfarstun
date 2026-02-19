@@ -88,7 +88,6 @@ function onSubmit() {
   }
 }
 
-
 const categoryStore = useCategoryStore()
 onMounted(() => {
   categoryStore.fetchAll?.()

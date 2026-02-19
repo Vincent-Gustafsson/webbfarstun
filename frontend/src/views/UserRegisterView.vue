@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import UserRegisterForm from '@/components/UserRegister.vue'
 import { userStore } from '@/stores/user'
-import type { UserRegister } from '@/types/user'
 
 const store = userStore()
 </script>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useCategoryStore } from '@/stores/admin/adminCategory'
 import { useVariationStore } from '@/stores/admin/adminVariation'
 import { useVariationOptionStore } from '@/stores/admin/adminVariationOption'
