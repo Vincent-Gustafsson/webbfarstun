@@ -17,11 +17,8 @@ watch(isLoggedIn, (now) => {
 <template>
   <div class="min-h-screen flex items-center justify-center p-4">
     <UserLogin
-      :submitting="store.submitting"
-      :generalError="store.generalError"
       :serverFieldErrors="store.fieldErrors"
       @login="store.login"
-      @clear-error="store.clearErrors"
       @cancel="$router.push('/')"
     />
   </div>

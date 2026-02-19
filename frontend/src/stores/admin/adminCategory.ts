@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import adminCategoryService from '@/services/admin/adminCategory'
 import type { Variation, VariationCreate, VariationUpdate } from '@/types/admin/adminVariation'
 import { getErrorMessage } from '@/utils/error'
-import type { CategoryUpdate, CategoryCreate } from '@/types/admin/adminCategory'
+import type { Category, CategoryUpdate, CategoryCreate } from '@/types/admin/adminCategory'
 
 export const useCategoryStore = defineStore('category', {
   state: () => ({
@@ -51,7 +51,7 @@ export const useCategoryStore = defineStore('category', {
         const category = await adminCategoryService.getOne(id)
         this.currentCategory = category
 
-        const i = this.categories.findIndex((c) => c.id === id)
+        const i = this.categories.findIndex((c: Category) => c.id === id)
         if (i !== -1) this.categories[i] = category
         else this.categories.push(category)
 
@@ -94,7 +94,7 @@ export const useCategoryStore = defineStore('category', {
       try {
         const updatedCategory = await adminCategoryService.update(id, payload)
 
-        const index = this.categories.findIndex((c) => c.id === id)
+        const index = this.categories.findIndex((c: Category) => c.id === id)
         if (index !== -1) {
           this.categories[index] = updatedCategory
         }
@@ -109,7 +109,7 @@ export const useCategoryStore = defineStore('category', {
     async remove(id: number) {
       const previousProduct = [...this.categories]
 
-      this.categories = this.categories.filter((c) => c.id !== id)
+      this.categories = this.categories.filter((c: Category) => c.id !== id)
 
       try {
         await adminCategoryService.delete(id)

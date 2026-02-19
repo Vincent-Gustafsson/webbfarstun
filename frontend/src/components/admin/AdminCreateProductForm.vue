@@ -40,7 +40,7 @@ function validate() {
   const e: typeof clientFieldErrors.value = {}
 
   if (form.name.trim().length < 3) e.name = 'Name must be at least 3 characters'
-  if (form.sku.trim().length < 3) e.sku = 'SKU must be at least 3 characters'
+  if ((form.sku ?? '').trim().length < 3) e.sku = 'SKU must be at least 3 characters'
   if (form.product_group_id <= 0) e.product_group_id = 'Please select a product group'
   if (!Number.isFinite(form.price) || form.price < 0) e.price = 'Price must be ≥ 0'
   if (!Number.isInteger(form.stock_qty) || form.stock_qty < 0)

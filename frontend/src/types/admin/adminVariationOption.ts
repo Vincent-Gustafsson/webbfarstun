@@ -1,6 +1,7 @@
 export interface VariationOption {
   id: number
   value: string
+  variation_id?: number
 }
 
 export interface VariationOptionCreate {
