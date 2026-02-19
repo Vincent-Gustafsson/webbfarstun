@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Index, Relationship, SQLModel, text
 
 from .schemas import (
     ActionBase,
@@ -93,6 +93,20 @@ class ProductImage(ProductImageBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     product_id: int = Field(foreign_key="product.id")
     product: Product = Relationship(back_populates="product_images")
+
+    url: str
+    is_default: bool = Field(default=False, nullable=False)
+
+    __table_args__ = (
+        # Only ONE row per product is allowed to have is_default = true
+        Index(
+            "uq_product_one_default_image",
+            "product_id",
+            unique=True,
+            postgresql_where=text("is_default IS TRUE"),
+            sqlite_where=text("is_default = 1"),
+        ),
+    )
 
 
 class User(UserBase, table=True):

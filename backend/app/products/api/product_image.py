@@ -1,3 +1,4 @@
+from app.db import get_session
 from fastapi import (
     APIRouter,
     Depends,
@@ -11,7 +12,6 @@ from fastapi import (
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 
-from ...db import get_session
 from ..image_storage import resolve_media_path, save_product_image
 from ..models import Product, ProductImage
 from ..schemas import (

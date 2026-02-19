@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { reactive, watch, computed, onMounted, ref } from 'vue'
-import type { CategoryUpdate } from '@/types/admin/adminCategory'
+import { computed, onMounted } from 'vue'
 import { useCategoryStore } from '@/stores/admin/adminCategory'
 
 const categoryStore = useCategoryStore()

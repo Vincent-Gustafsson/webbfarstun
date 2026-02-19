@@ -16,7 +16,7 @@ const createLinks = [
   { to: '/admin/product-groups', label: 'Product groups' },
 ]
 
-const UpdateLinks = [{ to: '/admin/list/categories', label: 'Categories' }]
+const UpdateLinks = [{ to: '/admin/list/categories', label: 'Categories' }, { to: '/admin/list/products', label: 'Products' }]
 </script>
 
 <template>

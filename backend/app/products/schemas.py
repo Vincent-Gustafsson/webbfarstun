@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 from pydantic import EmailStr
+from pydantic_core.core_schema import bool_schema
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
@@ -69,6 +70,8 @@ class ProductListItem(SQLModel):
 
     product_group_id: int
     category_id: int | None = None
+
+    default_image: str | None = None
 
     options: list[int] = Field(default_factory=list)
 
@@ -163,7 +166,7 @@ class ProductGroupVariationPublic(ProductGroupVariationBase):
 
 
 class ProductImageBase(SQLModel):
-    url: str
+    is_default: bool
 
 
 class ProductImageCreate(ProductImageBase):
@@ -177,6 +180,7 @@ class ProductImageUpdate(ProductImageBase):
 class ProductImagePublic(ProductImageBase):
     id: int
     product_id: int
+    url: str
 
 
 class UserBase(SQLModel):

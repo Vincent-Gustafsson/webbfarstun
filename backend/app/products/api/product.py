@@ -79,8 +79,21 @@ def get_products(
     limit: int = Query(default=100, le=100),
     category_id: int | None = None,
 ):
+    default_image_url = (
+        select(ProductImage.url)
+        .where(
+            ProductImage.product_id == Product.id,
+            ProductImage.is_default.is_(True),
+        )
+        .scalar_subquery()
+    )
+
     stmt = (
-        select(Product, ProductGroup.category_id)
+        select(
+            Product,
+            ProductGroup.category_id,
+            default_image_url.label("default_image"),
+        )
         .join(ProductGroup, Product.product_group_id == ProductGroup.id)
         .options(selectinload(Product.variation_options))
         .offset(offset)
@@ -90,7 +103,7 @@ def get_products(
     if category_id is not None:
         stmt = stmt.where(ProductGroup.category_id == category_id)
 
-    rows = session.exec(stmt).all()  # rows: list[tuple[Product, int | None]]
+    rows = session.exec(stmt).all()  # list[tuple[Product, int|None, str|None]]
 
     return [
         ProductListItem(
@@ -101,9 +114,10 @@ def get_products(
             sku=p.sku,
             product_group_id=p.product_group_id,
             category_id=cat_id,
+            default_image=default_url,
             options=[o.id for o in p.variation_options],
         )
-        for (p, cat_id) in rows
+        for (p, cat_id, default_url) in rows
     ]
 
 

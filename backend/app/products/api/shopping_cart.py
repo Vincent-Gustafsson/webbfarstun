@@ -1,13 +1,53 @@
+from app.auth.deps import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
 from ...db import get_session
 from ..models import ShoppingCart, User
 from ..schemas import ShoppingCartCreate, ShoppingCartPublic, ShoppingCartUpdate
 
-router = APIRouter(prefix="/shopping-carts", tags=["shopping-carts"])
+router = APIRouter(prefix="/cart", tags=["cart"])
 
 
+def get_or_create_cart(session: Session, user_id: int) -> ShoppingCart:
+    stmt = (
+        select(ShoppingCart)
+        .where(ShoppingCart.user_id == user_id)
+        .options(
+            selectinload(ShoppingCart.items).selectinload(ShoppingCartItem.product)
+        )
+    )
+    cart = session.exec(stmt).first()
+    if cart:
+        return cart
+
+    cart = ShoppingCart(user_id=user_id)
+    session.add(cart)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        cart = session.exec(stmt).first()
+        if cart is None:
+            raise
+        return cart
+
+    session.refresh(cart)
+    return cart
+
+
+@router.get("/", response_model=ShoppingCartPublic, status_code=status.HTTP_200_OK)
+def get_cart(
+    *,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    return get_or_create_cart(session, current_user.id)
+
+
+"""
 @router.post(
     "/", response_model=ShoppingCartPublic, status_code=status.HTTP_201_CREATED
 )
@@ -119,3 +159,4 @@ def delete_shopping_cart(
     session.delete(shopping_cart)
     session.commit()
     return None
+"""

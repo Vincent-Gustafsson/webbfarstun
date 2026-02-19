@@ -48,7 +48,6 @@ function onPick(e: Event) {
   const files = input.files ? Array.from(input.files) : []
   localError.value = null
 
-  // clear previous selection
   clearAllPreviews()
   picked.value = files.map((f) => ({
     file: f,
@@ -56,7 +55,6 @@ function onPick(e: Event) {
     status: 'queued',
   }))
 
-  // allow re-picking same file
   input.value = ''
 }
 
@@ -64,6 +62,16 @@ function removePicked(i: number) {
   const p = picked.value[i]
   if (p) URL.revokeObjectURL(p.previewUrl)
   picked.value.splice(i, 1)
+
+  if (picked.value.length === 0) {
+    defaultIndex.value = 0
+    return
+  }
+  if (defaultIndex.value === i) {
+    defaultIndex.value = 0
+  } else if (defaultIndex.value > i) {
+    defaultIndex.value -= 1
+  }
 }
 
 async function uploadAll() {
@@ -77,13 +85,17 @@ async function uploadAll() {
     return
   }
 
-  for (const p of picked.value) {
+  for (let i = 0; i < picked.value.length; i++) {
+    const p = picked.value[i]
     if (p.status === 'done') continue
 
     p.status = 'uploading'
     p.error = undefined
     try {
-      const created = await imageStore.upload(props.productId, p.file)
+      const created = await imageStore.upload(props.productId, p.file, {
+        isDefault: i === defaultIndex.value,
+      })
+
       if (!created?.id) {
         p.status = 'error'
         p.error = imageStore.error ?? 'Upload failed'
@@ -97,27 +109,8 @@ async function uploadAll() {
   }
 }
 
-async function uploadOne(i: number) {
-  localError.value = null
-  const p = picked.value[i]
-  if (!p) return
-  if (!props.productId) return (localError.value = 'Create the product first.')
-
-  p.status = 'uploading'
-  p.error = undefined
-  try {
-    const created = await imageStore.upload(props.productId, p.file)
-    if (!created?.id) {
-      p.status = 'error'
-      p.error = imageStore.error ?? 'Upload failed'
-    } else {
-      p.status = 'done'
-    }
-  } catch (err: any) {
-    p.status = 'error'
-    p.error = err?.message ?? imageStore.error ?? 'Upload failed'
-  }
-}
+// Handle default image selection
+const defaultIndex = ref<number>(0)
 </script>
 
 <template>
@@ -178,20 +171,26 @@ async function uploadOne(i: number) {
 
               <div class="flex gap-2 pt-1">
                 <button
-                  class="btn btn-secondary btn-xs"
-                  :disabled="disabled || isBusy || p.status === 'done'"
-                  @click="uploadOne(i)"
-                >
-                  Upload
-                </button>
-
-                <button
-                  class="btn btn-ghost btn-xs"
+                  class="btn btn-soft btn-error btn-xs"
                   :disabled="disabled || isBusy"
                   @click="removePicked(i)"
                 >
                   Remove
                 </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+                  <input
+                    type="radio"
+                    class="radio radio-primary radio-sm"
+                    name="main-image"
+                    :disabled="disabled || isBusy"
+                    :checked="defaultIndex === i"
+                    @change="defaultIndex = i"
+                  />
+                </label>
+
+                <span v-if="defaultIndex === i" class="badge badge-primary badge-sm">Default</span>
               </div>
             </div>
           </div>

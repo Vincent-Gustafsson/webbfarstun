@@ -22,10 +22,14 @@ export default {
     return http.delete<void>(`/product-images/${id}`)
   },
 
-  async uploadProductImage(productId: number, file: File) {
+  async uploadProductImage(productId: number, file: File, opts?: { isDefault?: boolean }) {
     const fd = new FormData()
     fd.append('product_id', String(productId))
     fd.append('image', file)
+
+    if (opts?.isDefault) {
+      fd.append('is_default', 'true')
+    }
 
     return http.postMultipart<ProductImage>('/product-images/upload', fd)
   },

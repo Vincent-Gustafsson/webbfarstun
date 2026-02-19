@@ -12,6 +12,7 @@ import AdminCategoryView from '@/views/admin/AdminCategoryView.vue'
 import AdminProductGroupView from '@/views/admin/AdminCreateProductGroupView.vue'
 import AdminCategoryListView from '@/views/admin/AdminCategoryListView.vue'
 import AdminCategoryUpdate from '@/views/admin/AdminCategoryUpdateView.vue'
+import AdminProductListView from '@/views/admin/AdminProductListView.vue'
 import { userStore } from '@/stores/user'
 
 const router = createRouter({
@@ -83,6 +84,12 @@ const router = createRouter({
           path: 'list/categories',
           name: 'admin-category-list',
           component: AdminCategoryListView,
+          props: true,
+        },
+        {
+          path: 'list/products',
+          name: 'admin-product-list',
+          component: AdminProductListView,
           props: true,
         },
         {

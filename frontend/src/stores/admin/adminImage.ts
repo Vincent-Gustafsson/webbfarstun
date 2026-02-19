@@ -9,6 +9,7 @@ export const useProductImageStore = defineStore('productImage', {
     loading: false,
     error: null as string | null,
     fieldErrors: {} as Partial<Record<keyof ProductImageCreate, string>>,
+    
   }),
 
   actions: {
@@ -75,13 +76,13 @@ export const useProductImageStore = defineStore('productImage', {
       }
     },
 
-    async upload(productId: number, file: File) {
+    async upload(productId: number, file: File, opts?: { isDefault?: boolean }) {
       this.loading = true
       this.error = null
       this.fieldErrors = {}
 
       try {
-        const created = await adminImageService.uploadProductImage(productId, file)
+        const created = await adminImageService.uploadProductImage(productId, file, opts)
         this.images.push(created)
         return created
       } catch (err: any) {
