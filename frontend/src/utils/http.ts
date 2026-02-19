@@ -11,15 +11,16 @@ function pickMessage(data: any, status: number) {
 }
 
 async function request<T>(url: string, config: RequestInit = {}): Promise<T> {
-  // Build headers without always forcing JSON (needed for form/login)
   const headers = new Headers(config.headers || {})
-  if (!headers.has('Content-Type')) {
+
+  const isFormData = typeof FormData !== 'undefined' && config.body instanceof FormData
+  if (!headers.has('Content-Type') && !isFormData) {
     headers.set('Content-Type', 'application/json')
   }
 
   const response = await fetch(`${API_BASE}${url}`, {
     ...config,
-    credentials: 'include', 
+    credentials: 'include',
     headers,
   })
 
@@ -60,5 +61,10 @@ export const http = {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams(body).toString(),
+    }),
+  postMultipart: <T>(url: string, form: FormData) =>
+    request<T>(url, {
+      method: 'POST',
+      body: form,
     }),
 }

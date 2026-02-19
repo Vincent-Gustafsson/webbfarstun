@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import AdminCreateProductForm from '@/components/admin/AdminCreateProductForm.vue'
 import AdminCreateProductVariationOptionsPicker from '@/components/admin/AdminCreateProductAndVariationOptionsPicker.vue'
 import { useProductStore } from '@/stores/admin/adminCreateProduct'
+import AdminCreateProductImage from '@/components/admin/AdminCreateProductImage.vue'
 
 const productStore = useProductStore()
 
@@ -37,5 +38,17 @@ function clearError() {
         />
       </template>
     </AdminCreateProductForm>
+
+    <div class="divider my-2"></div>
+
+    <div v-if="!productStore.createdId" class="text-sm opacity-70">
+      Create the product first, then you can upload images.
+    </div>
+
+    <AdminCreateProductImage
+      v-else
+      :product-id="productStore.createdId"
+      :disabled="productStore.loading"
+    />
   </main>
 </template>
