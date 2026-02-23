@@ -93,7 +93,7 @@ async function uploadAll() {
     p.error = undefined
     try {
       const created = await imageStore.upload(props.productId, p.file, {
-        isDefault: i === defaultIndex.value,
+        is_default: i === defaultIndex.value,
       })
 
       if (!created?.id) {
