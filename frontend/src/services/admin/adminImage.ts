@@ -22,12 +22,12 @@ export default {
     return http.delete<void>(`/product-images/${id}`)
   },
 
-  async uploadProductImage(productId: number, file: File, opts?: { isDefault?: boolean }) {
+  async uploadProductImage(productId: number, file: File, opts?: { is_default?: boolean }) {
     const fd = new FormData()
     fd.append('product_id', String(productId))
     fd.append('image', file)
 
-    if (opts?.isDefault) {
+    if (opts?.is_default) {
       fd.append('is_default', 'true')
     }
 
