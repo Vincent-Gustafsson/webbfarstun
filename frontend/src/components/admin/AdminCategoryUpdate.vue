@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed } from 'vue'
 import { useCategoryStore } from '@/stores/admin/adminCategory'
 import { useVariationStore } from '@/stores/admin/adminVariation'
 import { useVariationOptionStore } from '@/stores/admin/adminVariationOption'
@@ -8,13 +7,11 @@ import { useVariationOptionStore } from '@/stores/admin/adminVariationOption'
 import AdminCategoryForm from '@/components/admin/AdminCategoryForm.vue'
 import AdminCategoryVariationsEditor from '@/components/admin/AdminCategoryVariationsEditor.vue'
 
-const props = defineProps<{ category_id: string | number }>()
 
 const categoryStore = useCategoryStore()
 const variationStore = useVariationStore()
 const optionStore = useVariationOptionStore()
 
-const categoryId = computed(() => Number(props.category_id))
 
 const category = computed(() => categoryStore.currentCategory)
 const loading = computed(

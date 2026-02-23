@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { reactive, watch, computed, onMounted, ref } from 'vue'
+import { reactive, watch, computed, onMounted, ref, watchEffect } from 'vue'
 import type { Category, CategoryCreate, CategoryUpdate } from '@/types/admin/adminCategory'
 import { useCategoryStore } from '@/stores/admin/adminCategory'
-import { watchEffect } from 'vue'
 
 const props = defineProps<{
   mode?: 'create' | 'update'
