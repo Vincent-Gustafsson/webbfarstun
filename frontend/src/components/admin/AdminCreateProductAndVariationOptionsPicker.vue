@@ -4,11 +4,16 @@ import { useProductGroupStore } from '@/stores/admin/adminCreateProductGroup'
 import { useVariationStore } from '@/stores/admin/adminVariation'
 import { useVariationOptionStore } from '@/stores/admin/adminVariationOption'
 
-const props = defineProps<{
-  productGroupId: number
-  modelValue: number[]
-  disabled?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    productGroupId: number
+    modelValue: number[]
+    disabled?: boolean
+  }>(),
+  {
+    modelValue: () => [],
+  },
+)
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: number[]): void
@@ -35,23 +40,22 @@ const variationName = (variation_id: number) =>
 const optionsForVariation = (variation_id: number) =>
   (optionStore.variationOptions ?? []).filter((o: any) => o.variation_id === variation_id)
 
-function rebuildRows() {
+function syncRowsFromModelValue() {
   if (!props.productGroupId || variationIds.value.length === 0) {
     rows.value = []
     rowErrors.value = {}
-    emit('update:modelValue', [])
     return
   }
+  const selectedByVariation = new Map<number, number>()
+  for (const optionId of props.modelValue ?? []) {
+    const opt = (optionStore.variationOptions ?? []).find((o: any) => o.id === optionId)
+    if (opt) selectedByVariation.set(opt.variation_id, optionId)
+  }
 
-  rows.value = variationIds.value.map((vid, i) => ({
+  rows.value = variationIds.value.map((vid) => ({
     variation_id: vid,
-    option_id: props.modelValue[i] ?? 0,
+    option_id: selectedByVariation.get(vid) ?? 0,
   }))
-
-  emit(
-    'update:modelValue',
-    rows.value.map((r) => r.option_id),
-  )
 }
 
 function validate() {
@@ -70,9 +74,15 @@ watch(
     if (!variationStore.variations?.length) await variationStore.fetchAll?.()
     if (!optionStore.variationOptions?.length) await optionStore.fetchAll?.()
 
-    rebuildRows()
+    syncRowsFromModelValue()
   },
   { immediate: true },
+)
+
+watch(
+  () => props.modelValue,
+  () => syncRowsFromModelValue(),
+  { deep: true },
 )
 
 watch(
@@ -91,7 +101,7 @@ onMounted(async () => {
   await productGroupStore.fetchAll?.()
   await variationStore.fetchAll?.()
   await optionStore.fetchAll?.()
-  rebuildRows()
+  syncRowsFromModelValue()
 })
 </script>
 
