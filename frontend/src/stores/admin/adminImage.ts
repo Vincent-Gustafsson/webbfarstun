@@ -9,7 +9,6 @@ export const useProductImageStore = defineStore('productImage', {
     loading: false,
     error: null as string | null,
     fieldErrors: {} as Partial<Record<keyof ProductImageCreate, string>>,
-    
   }),
 
   actions: {
@@ -76,7 +75,7 @@ export const useProductImageStore = defineStore('productImage', {
       }
     },
 
-    async upload(productId: number, file: File, opts?: { isDefault?: boolean }) {
+    async upload(productId: number, file: File, opts?: { is_default?: boolean }) {
       this.loading = true
       this.error = null
       this.fieldErrors = {}
