@@ -1,18 +1,21 @@
 <script setup lang="ts">
-import { reactive, watch, computed, onMounted, ref } from 'vue'
+import { reactive, watch, computed, onMounted, ref, watchEffect } from 'vue'
 import type { ProductCreate } from '@/types/admin/adminCreateProduct'
 import { useProductGroupStore } from '@/stores/admin/adminCreateProductGroup'
 
 const props = defineProps<{
+  mode?: 'create' | 'update'
   submitting?: boolean
   generalError?: string | null
   serverFieldErrors?: Partial<Record<keyof ProductCreate, string>>
-  productGroupId: number
-  variationOptionIds: number[]
+  productGroupId: number | null
+  variationOptionIds: number[] | null
+  product?: any | null
 }>()
 
 const emit = defineEmits<{
   (e: 'create', payload: ProductCreate): void
+  (e: 'update', payload: ProductUpdate): void
   (e: 'cancel'): void
   (e: 'clear-error'): void
   (e: 'update:productGroupId', value: number): void
@@ -36,6 +39,28 @@ const hasServerFieldErrors = computed(
   () => !!props.serverFieldErrors && Object.keys(props.serverFieldErrors).length > 0,
 )
 
+watch(
+  () => props.product,
+  (p) => {
+    if (props.mode !== 'update' || !p) return
+
+    const optionIds = Array.isArray(p.options)
+      ? p.options.map((x: any) => (typeof x === 'number' ? x : x?.id)).filter(Boolean)
+      : []
+
+    Object.assign(form, defaults(), {
+      name: p.name ?? '',
+      description: p.description ?? '',
+      sku: p.sku ?? '',
+      product_group_id: p.product_group_id ?? 0,
+      price: p.price ?? 0,
+      stock_qty: p.stock_qty ?? 0,
+      options: optionIds,
+    })
+  },
+  { immediate: true },
+)
+
 function validate() {
   const e: typeof clientFieldErrors.value = {}
 
@@ -46,9 +71,9 @@ function validate() {
   if (!Number.isInteger(form.stock_qty) || form.stock_qty < 0)
     e.stock_qty = 'Stock must be an integer ≥ 0'
 
-  if (props.variationOptionIds.length > 0 && props.variationOptionIds.some((id) => id <= 0)) {
-    e.options = 'Please select one option for each variation'
-  }
+  // if (props.variationOptionIds.length > 0 && props.variationOptionIds.some((id) => id <= 0)) {
+  //   e.options = 'Please select one option for each variation'
+  // }
 
   clientFieldErrors.value = e
   return Object.keys(e).length === 0
@@ -61,25 +86,41 @@ function resetForm() {
 function onSubmit() {
   emit('clear-error')
 
-  if (!validate()) {
-    submitted.value = false
-    return
+  if (!validate()) return
+
+  const optionIds = (props.variationOptionIds ?? []).filter((id) => id > 0)
+
+  if (props.mode === 'update') {
+    const payload: ProductUpdate = {
+      name: form.name,
+      sku: form.sku,
+      product_group_id: form.product_group_id,
+      price: form.price,
+      stock_qty: form.stock_qty,
+      description: form.description,
+      options: optionIds,
+    }
+    emit('update', payload)
+  } else {
+    const payload: ProductCreate = {
+      name: form.name,
+      sku: form.sku,
+      product_group_id: form.product_group_id,
+      price: form.price,
+      stock_qty: form.stock_qty,
+      description: form.description,
+      options: optionIds,
+    } as any
+    emit('create', payload)
   }
-
-  submitted.value = true
-
-  const payload: ProductCreate = {
-    ...form,
-    options: props.variationOptionIds.filter((id) => id > 0),
-  }
-
-  emit('create', payload)
 }
 
 watch(
   () => props.productGroupId,
   (v) => {
-    form.product_group_id = v
+    if (props.mode === 'create' && typeof v === 'number') {
+      form.product_group_id = v
+    }
   },
   { immediate: true },
 )
@@ -111,7 +152,9 @@ onMounted(() => {
   <form @submit.prevent="onSubmit" class="card bg-base-100 shadow-xl max-w-2xl">
     <div class="card-body space-y-6">
       <header class="space-y-1">
-        <h2 class="card-title text-2xl">Create product</h2>
+        <h2 class="card-title text-2xl">
+          {{ props.mode === 'update' ? 'Update Product' : 'Create Product' }}
+        </h2>
       </header>
 
       <div v-if="generalError" class="alert alert-error">
@@ -252,7 +295,7 @@ onMounted(() => {
         <button type="button" class="btn btn-ghost" @click="emit('cancel')">Cancel</button>
         <button type="submit" class="btn btn-primary" :disabled="submitting">
           <span v-if="submitting" class="loading loading-spinner loading-sm"></span>
-          {{ submitting ? 'Saving…' : 'Create product' }}
+          {{ submitting ? 'Saving…' : 'Submit' }}
         </button>
       </footer>
     </div>

@@ -6,6 +6,7 @@ export interface Product {
   stock_qty: number
   description: string
   sku?: string
+  default_image: string
 }
 
 export interface ProductCreate {
@@ -16,6 +17,7 @@ export interface ProductCreate {
   description: string
   sku?: string
   options: number[]
+  default_image: string
 }
 
 export interface ProductUpdate {
@@ -25,4 +27,5 @@ export interface ProductUpdate {
   stock_qty?: number
   description?: string
   sku?: string
+  default_image?: string
 }

@@ -119,6 +119,7 @@ def upload_product_image(
     *,
     session: Session = Depends(get_session),
     product_id: int = Form(...),
+    is_default: bool = Form(False),
     image: UploadFile = File(...),
 ):
     product_exists = session.get(Product, product_id)
@@ -130,7 +131,9 @@ def upload_product_image(
     db_url = save_product_image(image)
 
     # Assumes ProductImageBase has "url: str"
-    db_product_image = ProductImage(product_id=product_id, url=db_url)
+    db_product_image = ProductImage(
+        product_id=product_id, url=db_url, is_default=is_default
+    )
 
     session.add(db_product_image)
     session.commit()

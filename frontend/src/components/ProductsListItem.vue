@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ProductListItem } from '@/types/product'
+import { productImageUrl } from '@/services/products.ts'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -32,11 +33,7 @@ function goToDetails() {
     @keydown.space.prevent="goToDetails"
   >
     <div class="flex">
-      <img
-        src="https://i.pinimg.com/originals/fc/0c/98/fc0c981fe4a4a8796badd15b423414cb.gif"
-        class="h-15 w-25"
-        alt=""
-      />
+      <img :src="productImageUrl(product.default_image)" class="h-15 w-25" alt="" />
 
       <div class="ml-5">
         <!-- clickable + hoverable name -->

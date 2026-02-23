@@ -3,8 +3,15 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
 
 from ...db import get_session
-from ..models import Product, ProductGroup, VariationOption
-from ..schemas import ProductCreate, ProductListItem, ProductPublic, ProductUpdate
+from ..models import Product, ProductGroup, ProductImage, Variation, VariationOption
+from ..schemas import (
+    ProductCreate,
+    ProductListItem,
+    ProductPublic,
+    ProductUpdate,
+    VariationDropdownPublic,
+    VariationOptionPublic,
+)
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -80,7 +87,7 @@ def get_products(
     category_id: int | None = None,
 ):
     default_image_url = (
-        select(ProductImage.url)
+        select(ProductImage.id)
         .where(
             ProductImage.product_id == Product.id,
             ProductImage.is_default.is_(True),
@@ -112,6 +119,7 @@ def get_products(
             price=p.price,
             stock_qty=p.stock_qty,
             sku=p.sku,
+            description=p.description,
             product_group_id=p.product_group_id,
             category_id=cat_id,
             default_image=default_url,
@@ -122,13 +130,59 @@ def get_products(
 
 
 @router.get("/{product_id}", response_model=ProductPublic)
+@router.get("/{product_id}", response_model=ProductPublic)
 def get_product(*, product_id: int, session: Session = Depends(get_session)):
-    product = session.get(Product, product_id)
+    stmt = (
+        select(Product)
+        .where(Product.id == product_id)
+        .options(
+            selectinload(Product.product_images),
+            selectinload(
+                Product.variation_options
+            ),  # selected options for this product
+            selectinload(Product.product_group)
+            .selectinload(ProductGroup.variations)
+            .selectinload(
+                Variation.variation_options
+            ),  # dropdown options per variation
+        )
+    )
+    product = session.exec(stmt).one_or_none()
+
     if not product:
         raise HTTPException(
             status_code=404, detail={"errors": {"product": "Product not found"}}
         )
-    return product
+
+    # map: variation_id -> selected option id for this product
+    selected_by_variation: dict[int, int] = {
+        opt.variation_id: opt.id for opt in product.variation_options
+    }
+
+    variations_payload = []
+    for v in product.product_group.variations if product.product_group else []:
+        variations_payload.append(
+            VariationDropdownPublic(
+                id=v.id,
+                name=v.name,
+                category_id=v.category_id,
+                options=[
+                    VariationOptionPublic(
+                        id=o.id, variation_id=o.variation_id, value=o.value
+                    )
+                    for o in v.variation_options
+                ],
+                selected_option_id=selected_by_variation.get(v.id),
+            )
+        )
+
+    base = product.model_dump(exclude={"product_images", "variation_options"})
+    return ProductPublic(
+        **base,
+        options=[o.id for o in product.variation_options],
+        product_images=product.product_images,
+        variations=variations_payload,
+    )
 
 
 @router.patch("/{product_id}", response_model=ProductUpdate)

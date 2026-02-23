@@ -5,7 +5,6 @@ from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
 
-# backend/app/products/image_storage.py -> backend/ is parents[2]
 BASE_DIR = Path(__file__).resolve().parents[2]
 MEDIA_ROOT = BASE_DIR / "media"
 PRODUCTS_DIR = MEDIA_ROOT / "products"

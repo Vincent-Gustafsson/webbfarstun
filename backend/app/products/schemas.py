@@ -58,7 +58,14 @@ class ProductUpdate(SQLModel):
 
 class ProductPublic(ProductBase):
     id: int
+
     options: list[int] = Field(default_factory=list)
+    variations: list["VariationDropdownPublic"] = Field(default_factory=list)
+
+    product_images: list["ProductImagePublic"] = Field(
+        default_factory=list,
+        serialization_alias="images",
+    )
 
 
 class ProductListItem(SQLModel):
@@ -67,11 +74,11 @@ class ProductListItem(SQLModel):
     price: int
     stock_qty: int
     sku: str | None = None
-
+    description: str | None = None
     product_group_id: int
     category_id: int | None = None
 
-    default_image: str | None = None
+    default_image: int | None = None
 
     options: list[int] = Field(default_factory=list)
 
@@ -112,6 +119,11 @@ class VariationUpdate(VariationBase):
 class VariationPublic(VariationBase):
     id: int
     category_id: int | None = None
+
+
+class VariationDropdownPublic(VariationPublic):
+    options: list["VariationOptionPublic"] = Field(default_factory=list)
+    selected_option_id: int | None = None
 
 
 class VariationOptionBase(SQLModel):

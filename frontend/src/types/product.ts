@@ -20,9 +20,32 @@ export interface ProductUpdate {
   sku?: string | null
 }
 
+export interface VariationOptionPublic {
+  id: number
+  variation_id: number
+  value: string
+}
+
+export interface VariationDropdownPublic {
+  id: number
+  name: string
+  category_id?: number | null
+  options: VariationOptionPublic[]
+  selected_option_id?: number | null
+}
+
+export interface ProductImagePublic {
+  id: number
+  product_id: number
+  url: string
+  is_default: boolean
+}
+
 export interface ProductPublic extends ProductBase {
   id: number
   options: number[]
+  images: ProductImagePublic[]
+  variations: VariationDropdownPublic[]
 }
 
 export interface ProductListItem {
@@ -34,6 +57,7 @@ export interface ProductListItem {
 
   product_group_id: number
   category_id?: number | null
+  default_image?: number | null
 
   options: number[]
 }

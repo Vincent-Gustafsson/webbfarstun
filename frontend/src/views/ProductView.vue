@@ -5,7 +5,7 @@ import { useProductStore } from '@/stores/products'
 import ProductInformation from '@/components/ProductInformation.vue'
 import ProductReviews from '@/components/ProductReviews.vue'
 
-const props = defineProps<{ id: string }>() // if your route uses props: true
+const props = defineProps<{ id: string }>()
 
 const productStore = useProductStore()
 const { activeProduct, loading, error } = storeToRefs(productStore)
@@ -35,6 +35,20 @@ watch(() => props.id, load)
 
     <div class="flex-1 card bg-base-100 shadow p-4">
       <h2 class="text-4xl text-accent text-center">(Options)</h2>
+
+      <div v-for="v in activeProduct.variations" :key="v.id" class="form-control w-full max-w-xs">
+        <label class="label">
+          <span class="label-text">{{ v.name }}</span>
+        </label>
+
+        <select class="select select-bordered" :value="v.selected_option_id ?? ''">
+          <option disabled value="">Choose {{ v.name }}</option>
+          <option v-for="opt in v.options" :key="opt.id" :value="opt.id">
+            {{ opt.value }}
+          </option>
+        </select>
+      </div>
+
       <div class="divider"></div>
       <h2 class="text-4xl text-center">{{ activeProduct.price }} kr</h2>
       <div class="divider"></div>
