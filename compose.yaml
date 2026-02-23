@@ -19,14 +19,18 @@ services:
       - .env
     ports:
       - "5432:5432"
+
   pgadmin:
     image: dpage/pgadmin4:snapshot
     env_file:
       - .env
+    environment:
+      PGADMIN_CONFIG_PROXY_X_PREFIX_COUNT: 1
     ports:
-      - "5050:5050"
+      - "5050:80"
     depends_on:
       - db
+
   frontend:
     build: ./frontend
     ports:
@@ -47,6 +51,7 @@ services:
       - caddy_config:/config
     ports:
       - "80:80"
+
   tunnel:
     image: cloudflare/cloudflared:latest
     container_name: my-tunnel

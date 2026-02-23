@@ -14,8 +14,10 @@
     }
 
     # pgAdmin
-    handle_path /pgadmin/* {
-        reverse_proxy pgadmin:5050
+    handle_path /pgadmin* {
+        reverse_proxy pgadmin:80 {
+            header_up X-Forwarded-Prefix /pgadmin
+        }
     }
 
     # Frontend (everything else) -> Vite
