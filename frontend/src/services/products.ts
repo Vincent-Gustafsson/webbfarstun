@@ -7,6 +7,9 @@ import type {
   ProductUpdate,
 } from '../types/product'
 
+export const productImageUrl = (productImageId: number) =>
+  `/api/product-images/${productImageId}/file`
+
 export default {
   async getAll(params?: ProductListParams) {
     if (params && Object.keys(params).length > 0) {
