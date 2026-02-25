@@ -78,23 +78,37 @@ watch(
   },
   { immediate: true },
 )
+function idsKey(ids: number[]) {
+  return (ids ?? []).join(',')
+}
+
+function currentRowIds() {
+  return rows.value.map((r) => r.option_id)
+}
 
 watch(
   () => props.modelValue,
-  () => syncRowsFromModelValue(),
-  { deep: true },
+  () => {
+    const a = idsKey((props.modelValue ?? []) as number[])
+    const b = idsKey(currentRowIds())
+    if (a !== b) syncRowsFromModelValue()
+  },
+  { deep: false },
 )
 
 watch(
-  () => rows.value.map((r) => r.option_id),
+  () => idsKey(currentRowIds()),
   () => {
-    emit(
-      'update:modelValue',
-      rows.value.map((r) => r.option_id),
-    )
+    const next = currentRowIds()
+    const a = idsKey(next)
+    const b = idsKey((props.modelValue ?? []) as number[])
+
+    if (a !== b) {
+      emit('update:modelValue', next)
+    }
+
     if (Object.keys(rowErrors.value).length) validate()
   },
-  { deep: true },
 )
 
 onMounted(async () => {

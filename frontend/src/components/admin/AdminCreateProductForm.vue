@@ -71,9 +71,9 @@ function validate() {
   if (!Number.isInteger(form.stock_qty) || form.stock_qty < 0)
     e.stock_qty = 'Stock must be an integer ≥ 0'
 
-  // if (props.variationOptionIds.length > 0 && props.variationOptionIds.some((id) => id <= 0)) {
-  //   e.options = 'Please select one option for each variation'
-  // }
+  if (props.variationOptionIds.length > 0 && props.variationOptionIds.some((id) => id <= 0)) {
+    e.options = 'Please select one option for each variation'
+  }
 
   clientFieldErrors.value = e
   return Object.keys(e).length === 0

@@ -32,6 +32,7 @@ export const useProductStore = defineStore('product', {
 
       this.loading = true
       this.error = null
+      this.products = []
 
       try {
         this.products = await productService.getAll()

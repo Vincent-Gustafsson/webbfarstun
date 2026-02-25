@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onActivated } from 'vue'
 import { useProductStore } from '@/stores/admin/adminCreateProduct'
 
 import { productImageUrl } from '@/services/products.ts'
@@ -10,9 +10,12 @@ const products = computed(() => productStore.products)
 const loading = computed(() => productStore.loading)
 const error = computed(() => productStore.error)
 
-onMounted(async () => {
-  await productStore.fetchAll()
-})
+async function load() {
+  await productStore.fetchAll(true)
+}
+
+onMounted(load)
+onActivated(load)
 </script>
 
 <template>
@@ -21,7 +24,12 @@ onMounted(async () => {
   <div v-else class="list bg-base-100 rounded-box shadow-md">
     <div v-for="p in products" :key="p.id" class="card bg-base-100 w-96 shadow-sm">
       <figure>
-        <img :src="productImageUrl(p.default_image)" alt="Shoes" />
+        <img
+          v-if="productImageUrl(p.default_image)"
+          :src="productImageUrl(p.default_image)!"
+          alt=""
+        />
+        <div v-else class="h-48 w-full bg-base-200 rounded"></div>
       </figure>
       <div class="card-body">
         <h2 class="card-title">{{ p.name }}</h2>
