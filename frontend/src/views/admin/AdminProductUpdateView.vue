@@ -5,6 +5,8 @@ import { useProductStore } from '@/stores/admin/adminCreateProduct'
 
 import AdminCreateProductForm from '@/components/admin/AdminCreateProductForm.vue'
 import AdminCreateProductVariationsOptionsPicker from '@/components/admin/AdminCreateProductAndVariationOptionsPicker.vue'
+import AdminCreateProductImage from '@/components/admin/AdminCreateProductImage.vue'
+
 const productStore = useProductStore()
 
 const props = defineProps<{ product_id: string | number }>()
@@ -83,4 +85,10 @@ onMounted(async () => {
       />
     </template>
   </AdminCreateProductForm>
+  <div class="divider my-2"></div>
+  <AdminCreateProductImage
+    v-if="Number.isFinite(productId)"
+    :product-id="productId"
+    :disabled="productStore.loading"
+  />
 </template>

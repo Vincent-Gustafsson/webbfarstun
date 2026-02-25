@@ -24,7 +24,48 @@ export const useProductImageStore = defineStore('productImage', {
         this.loading = false
       }
     },
+    async fetchForProduct(productId: number) {
+      this.loading = true
+      this.error = null
+      try {
+        const all = await adminImageService.getAll()
+        this.images = all.filter((img: any) => img.product_id === productId)
+      } catch (err: unknown) {
+        this.error = getErrorMessage(err)
+        console.error(err)
+      } finally {
+        this.loading = false
+      }
+    },
+    async setDefault(productId: number, imageId: number) {
+      this.loading = true
+      this.error = null
+      try {
+        const current = this.images.find(
+          (img: any) => Number(img.product_id) === Number(productId) && img.is_default === true,
+        )
 
+        if (current?.id && current.id !== imageId) {
+          await adminImageService.update(current.id, { is_default: false } as any)
+        }
+
+        const updated = await adminImageService.update(imageId, { is_default: true } as any)
+
+        this.images = this.images.map((img: any) =>
+          Number(img.product_id) === Number(productId)
+            ? { ...img, is_default: img.id === imageId }
+            : img,
+        )
+
+        return updated
+      } catch (err: unknown) {
+        this.error = getErrorMessage(err)
+        console.error(err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
     async create(payload: ProductImageCreate) {
       this.loading = true
       this.error = null
@@ -83,6 +124,11 @@ export const useProductImageStore = defineStore('productImage', {
       try {
         const created = await adminImageService.uploadProductImage(productId, file, opts)
         this.images.push(created)
+        if (created?.is_default) {
+          this.images = this.images.map((img: any) =>
+            img.product_id === productId ? { ...img, is_default: img.id === created.id } : img,
+          )
+        }
         return created
       } catch (err: any) {
         const data = err?.data

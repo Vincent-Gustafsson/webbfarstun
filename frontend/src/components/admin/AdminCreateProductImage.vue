@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, onMounted } from 'vue'
 import { useProductImageStore } from '@/stores/admin/adminImage'
+import { useProductStore } from '@/stores/admin/adminCreateProduct'
 
 const props = defineProps<{
   productId: number
@@ -8,6 +9,7 @@ const props = defineProps<{
 }>()
 
 const imageStore = useProductImageStore()
+const productStore = useProductStore()
 
 type PickedFile = {
   file: File
@@ -33,15 +35,6 @@ function clearAllPreviews() {
 onBeforeUnmount(() => {
   clearAllPreviews()
 })
-
-watch(
-  () => props.productId,
-  () => {
-    clearAllPreviews()
-    picked.value = []
-    localError.value = null
-  },
-)
 
 function onPick(e: Event) {
   const input = e.target as HTMLInputElement
@@ -76,14 +69,10 @@ function removePicked(i: number) {
 
 async function uploadAll() {
   localError.value = null
-  if (!props.productId) {
-    localError.value = 'Create the product first.'
-    return
-  }
-  if (picked.value.length === 0) {
-    localError.value = 'Pick at least one file.'
-    return
-  }
+  if (!props.productId) return (localError.value = 'Create the product first.')
+  if (picked.value.length === 0) return (localError.value = 'Pick at least one file.')
+
+  let newDefaultImageId: number | null = null
 
   for (let i = 0; i < picked.value.length; i++) {
     const p = picked.value[i]
@@ -91,25 +80,80 @@ async function uploadAll() {
 
     p.status = 'uploading'
     p.error = undefined
+
     try {
-      const created = await imageStore.upload(props.productId, p.file, {
-        is_default: i === defaultIndex.value,
-      })
+      const created = await imageStore.upload(props.productId, p.file, { is_default: false })
 
       if (!created?.id) {
         p.status = 'error'
         p.error = imageStore.error ?? 'Upload failed'
       } else {
         p.status = 'done'
+        if (i === defaultIndex.value) newDefaultImageId = created.id
       }
     } catch (err: any) {
       p.status = 'error'
       p.error = err?.message ?? imageStore.error ?? 'Upload failed'
     }
   }
+
+  if (newDefaultImageId) {
+    await imageStore.setDefault(props.productId, newDefaultImageId)
+  }
+
+  await refresh()
+  picked.value = []
+  defaultIndex.value = 0
 }
 
-// Handle default image selection
+const existing = computed(() =>
+  (imageStore.images ?? []).filter((img: any) => {
+    const pid = Number(img.product_id ?? img.productId)
+    return pid === Number(props.productId)
+  }),
+)
+
+async function refresh() {
+  if (!props.productId) return
+  await imageStore.fetchAll()
+}
+onMounted(refresh)
+
+async function makeDefault(imageId: number) {
+  const updated = await imageStore.setDefault(props.productId, imageId)
+
+  if (productStore.current?.id === props.productId) productStore.current.default_image = updated
+  const listItem = productStore.products.find((p) => p.id === props.productId)
+  if (listItem) listItem.default_image = updated
+}
+
+async function deleteExisting(imageId: number) {
+  await imageStore.remove(imageId)
+  await refresh()
+}
+
+watch(
+  () => props.productId,
+  async () => {
+    clearAllPreviews()
+    picked.value = []
+    localError.value = null
+
+    await refresh()
+  },
+)
+
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) || window.location.origin
+
+function imgSrc(img: any) {
+  const id = Number(img?.id)
+  if (Number.isFinite(id) && id > 0) {
+    return `${API_BASE.replace(/\/$/, '')}/api/product-images/${id}/file`
+  }
+
+  return ''
+}
+
 const defaultIndex = ref<number>(0)
 </script>
 
@@ -120,7 +164,36 @@ const defaultIndex = ref<number>(0)
         <h3 class="card-title text-xl">Images</h3>
         <div class="text-sm opacity-70">Product #{{ productId }}</div>
       </div>
+      <div v-if="existing.length" class="space-y-2">
+        <div class="font-medium">Current images</div>
 
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div v-for="img in existing" :key="img.id" class="rounded-box border border-base-300 p-2">
+            <div class="aspect-square rounded-box overflow-hidden border border-base-300">
+              <img v-if="imgSrc(img)" :src="imgSrc(img)" class="w-full h-full object-cover" />
+              <div v-else class="w-full h-full bg-base-200"></div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 gap-2">
+              <button
+                class="btn btn-xs btn-primary"
+                :disabled="disabled || isBusy || img.is_default"
+                @click="makeDefault(img.id)"
+              >
+                {{ img.is_default ? 'Default' : 'Make default' }}
+              </button>
+
+              <button
+                class="btn btn-xs btn-error btn-soft"
+                :disabled="disabled || isBusy"
+                @click="deleteExisting(img.id)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
       <input
         type="file"
         class="file-input file-input-bordered w-full"
