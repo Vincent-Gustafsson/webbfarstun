@@ -3,7 +3,7 @@ import userServices from '@/services/user'
 import type { User, UserRegister, UserUpdate } from '@/types/user'
 import { getErrorMessage } from '@/utils/error'
 
-export const userStore = defineStore('user', {
+export const useUserStore = defineStore('user', {
   state: () => ({
     users: [] as User[],
     me: null as User | null,

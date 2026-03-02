@@ -14,7 +14,9 @@ import AdminCategoryListView from '@/views/admin/AdminCategoryListView.vue'
 import AdminCategoryUpdate from '@/views/admin/AdminCategoryUpdateView.vue'
 import AdminProductListView from '@/views/admin/AdminProductListView.vue'
 import AdminProductUpdate from '@/views/admin/AdminProductUpdateView.vue'
-import { userStore } from '@/stores/user'
+import AdminProductGroupListView from '@/views/admin/AdminProductGroupListView.vue'
+import AdminProductGroupUpdateView from '@/views/admin/AdminProductGroupUpdateView.vue'
+import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -94,6 +96,12 @@ const router = createRouter({
           props: true,
         },
         {
+          path: 'list/product-groups',
+          name: 'admin-product-group-list',
+          component: AdminProductGroupListView,
+          props: true,
+        },
+        {
           path: 'categories/:category_id/update',
           name: 'admin-category-update',
           component: AdminCategoryUpdate,
@@ -105,13 +113,19 @@ const router = createRouter({
           component: AdminProductUpdate,
           props: true,
         },
+        {
+          path: 'product-groups/:product_group_id/update',
+          name: 'admin-product-group-update',
+          component: AdminProductGroupUpdateView,
+          props: true,
+        },
       ],
     },
   ],
 })
 
 router.beforeEach(async (to) => {
-  const store = userStore()
+  const store = useUserStore()
 
   // Make sure we know the login state once per refresh
   if (!store.authChecked) {

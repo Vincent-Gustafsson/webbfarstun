@@ -11,6 +11,12 @@ const error = computed(() => categoryStore.error)
 onMounted(async () => {
   await categoryStore.fetchAll()
 })
+
+function onDelete(id: number, name?: string) {
+  const ok = confirm(`Delete category${name ? ` "${name}"` : ''}?`)
+  if (!ok) return
+  categoryStore.remove(id)
+}
 </script>
 
 <template>
@@ -35,7 +41,7 @@ onMounted(async () => {
       </div>
 
       <div class="flex justify-end space-x-2">
-        <button class="btn btn-soft btn-error">Delete</button>
+        <button class="btn btn-soft btn-error" @click="onDelete(c.id, c.name)">Delete</button>
         <button class="btn btn-soft btn-warning">
           <RouterLink :to="{ name: 'admin-category-update', params: { category_id: c.id } }">
             Update

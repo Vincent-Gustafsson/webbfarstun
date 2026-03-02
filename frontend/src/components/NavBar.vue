@@ -3,10 +3,10 @@ import { computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useRouter } from 'vue-router'
-import { userStore } from '@/stores/user'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
-const accountStore = userStore()
+const accountStore = useUserStore()
 
 const isLoggedIn = computed(() => accountStore.isLoggedIn)
 

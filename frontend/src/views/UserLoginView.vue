@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import UserLogin from '@/components/UserLogin.vue'
-import { userStore } from '@/stores/user'
+import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { computed, watch } from 'vue'
 
-const store = userStore()
+const store = useUserStore()
 const router = useRouter()
 
 const isLoggedIn = computed(() => store.isLoggedIn)
