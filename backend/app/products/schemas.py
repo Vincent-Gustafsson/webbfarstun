@@ -67,6 +67,9 @@ class ProductPublic(ProductBase):
         serialization_alias="images",
     )
 
+    review_count: int = 0
+    review_score: float = 0.0
+
 
 class ProductListItem(SQLModel):
     id: int
@@ -81,6 +84,8 @@ class ProductListItem(SQLModel):
     default_image: int | None = None
 
     options: list[int] = Field(default_factory=list)
+
+    review_score: float = 0.0
 
 
 class ProductGroupBase(SQLModel):
@@ -257,20 +262,17 @@ class ReviewBase(SQLModel):
 
 class ReviewCreate(ReviewBase):
     product_group_id: int
-    user_id: int
+
+
+class ReviewUser(SQLModel):
+    name: str
+    id: int
 
 
 class ReviewPublic(ReviewBase):
     id: int
     product_group_id: int
-    user_id: int
-
-
-class ReviewUpdate(SQLModel):
-    score: int | None = None
-    comment: str | None = None
-    product_group_id: int | None = None
-    user_id: int | None = None
+    user: ReviewUser
 
 
 class ShoppingCartBase(SQLModel):
@@ -278,7 +280,8 @@ class ShoppingCartBase(SQLModel):
 
 
 class ShoppingCartCreate(ShoppingCartBase):
-    pass
+    id: int
+    user_id: int
 
 
 class ShoppingCartPublic(ShoppingCartBase):

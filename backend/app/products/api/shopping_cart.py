@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
 from ...db import get_session
-from ..models import ShoppingCart, User
+from ..models import ShoppingCart, ShoppingCartItem, User
 from ..schemas import ShoppingCartCreate, ShoppingCartPublic, ShoppingCartUpdate
 
 router = APIRouter(prefix="/cart", tags=["cart"])

@@ -12,7 +12,11 @@ from fastapi import (
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 
-from ..image_storage import resolve_media_path, save_product_image
+from ..image_storage import (
+    delete_product_image_impl,
+    resolve_media_path,
+    save_product_image,
+)
 from ..models import Product, ProductImage
 from ..schemas import (
     ProductImageBase,
@@ -107,7 +111,8 @@ def delete_product_image(
             status_code=404,
             detail={"errors": {"product_image_id": "product image not found"}},
         )
-    session.delete(product_image)
+
+    delete_product_image_impl(session, product_image)
     session.commit()
     return None
 

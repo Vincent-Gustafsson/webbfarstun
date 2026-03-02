@@ -1,9 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
-from sqlmodel import Session, col, select
+from sqlmodel import Session, delete, select
 
 from ...db import get_session
-from ..models import Product, ProductGroup, ProductImage, Variation, VariationOption
+from ..image_storage import delete_product_image_impl
+from ..models import (
+    Product,
+    ProductConfig,
+    ProductGroup,
+    ProductImage,
+    Review,
+    ShoppingCartItem,
+    Variation,
+    VariationOption,
+)
 from ..schemas import (
     ProductCreate,
     ProductListItem,
@@ -88,10 +100,13 @@ def get_products(
 ):
     default_image_url = (
         select(ProductImage.id)
-        .where(
-            ProductImage.product_id == Product.id,
-            ProductImage.is_default.is_(True),
-        )
+        .where(ProductImage.product_id == Product.id, ProductImage.is_default.is_(True))
+        .scalar_subquery()
+    )
+
+    avg_score_sq = (
+        select(func.coalesce(func.avg(Review.score), 0.0))
+        .where(Review.product_group_id == Product.product_group_id)
         .scalar_subquery()
     )
 
@@ -100,6 +115,7 @@ def get_products(
             Product,
             ProductGroup.category_id,
             default_image_url.label("default_image"),
+            avg_score_sq.label("review_score"),
         )
         .join(ProductGroup, Product.product_group_id == ProductGroup.id)
         .options(selectinload(Product.variation_options))
@@ -110,7 +126,7 @@ def get_products(
     if category_id is not None:
         stmt = stmt.where(ProductGroup.category_id == category_id)
 
-    rows = session.exec(stmt).all()  # list[tuple[Product, int|None, str|None]]
+    rows = session.exec(stmt).all()
 
     return [
         ProductListItem(
@@ -122,14 +138,14 @@ def get_products(
             description=p.description,
             product_group_id=p.product_group_id,
             category_id=cat_id,
-            default_image=default_url,
+            default_image=default_img,
             options=[o.id for o in p.variation_options],
+            review_score=round(float(review_score or 0.0), 1),
         )
-        for (p, cat_id, default_url) in rows
+        for (p, cat_id, default_img, review_score) in rows
     ]
 
 
-@router.get("/{product_id}", response_model=ProductPublic)
 @router.get("/{product_id}", response_model=ProductPublic)
 def get_product(*, product_id: int, session: Session = Depends(get_session)):
     stmt = (
@@ -137,25 +153,28 @@ def get_product(*, product_id: int, session: Session = Depends(get_session)):
         .where(Product.id == product_id)
         .options(
             selectinload(Product.product_images),
-            selectinload(
-                Product.variation_options
-            ),  # selected options for this product
+            selectinload(Product.variation_options),
             selectinload(Product.product_group)
             .selectinload(ProductGroup.variations)
-            .selectinload(
-                Variation.variation_options
-            ),  # dropdown options per variation
+            .selectinload(Variation.variation_options),
         )
     )
     product = session.exec(stmt).one_or_none()
-
     if not product:
         raise HTTPException(
             status_code=404, detail={"errors": {"product": "Product not found"}}
         )
 
-    # map: variation_id -> selected option id for this product
-    selected_by_variation: dict[int, int] = {
+    # aggregates for this product's group
+    review_count, avg_score = session.exec(
+        select(func.count(Review.id), func.avg(Review.score)).where(
+            Review.product_group_id == product.product_group_id
+        )
+    ).one()
+
+    review_score = round(float(avg_score or 0.0), 1)
+
+    selected_by_variation = {
         opt.variation_id: opt.id for opt in product.variation_options
     }
 
@@ -182,6 +201,8 @@ def get_product(*, product_id: int, session: Session = Depends(get_session)):
         options=[o.id for o in product.variation_options],
         product_images=product.product_images,
         variations=variations_payload,
+        review_count=review_count,
+        review_score=review_score,
     )
 
 
@@ -214,6 +235,32 @@ def delete_product(*, product_id: int, session: Session = Depends(get_session)):
         raise HTTPException(
             status_code=404, detail={"errors": {"product": "Product not found"}}
         )
-    session.delete(product)
-    session.commit()
-    return None
+
+    try:
+        images = session.exec(
+            select(ProductImage).where(ProductImage.product_id == product_id)
+        ).all()
+        for img in images:
+            delete_product_image_impl(session, img)
+
+        session.exec(
+            delete(ShoppingCartItem).where(ShoppingCartItem.product_id == product_id)
+        )
+        session.exec(
+            delete(ProductConfig).where(ProductConfig.product_id == product_id)
+        )
+
+        session.delete(product)
+        session.commit()
+        return None
+
+    except IntegrityError as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "errors": {
+                    "product": "Cannot delete product due to existing references"
+                }
+            },
+        )

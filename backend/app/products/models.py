@@ -1,6 +1,7 @@
 from typing import Optional
 
-from sqlmodel import Field, Index, Relationship, SQLModel, text
+from sqlalchemy import Column, ForeignKey, Integer
+from sqlmodel import Field, Index, Relationship, SQLModel, UniqueConstraint, text
 
 from .schemas import (
     ActionBase,
@@ -21,7 +22,14 @@ from .schemas import (
 
 class Category(CategoryBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    category_parent_id: int | None = Field(default=None, foreign_key="category.id")
+    category_parent_id: int | None = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey("category.id", ondelete="CASCADE"),
+            nullable=True,
+        ),
+    )
     parent: Optional["Category"] = Relationship(
         back_populates="subcategories",
         sa_relationship_kwargs={"remote_side": "Category.id"},
@@ -30,18 +38,35 @@ class Category(CategoryBase, table=True):
         back_populates="parent",
         cascade_delete=True,
     )
-    product_groups: list["ProductGroup"] = Relationship(back_populates="category")
-    variations: list["Variation"] = Relationship(back_populates="category")
+    product_groups: list["ProductGroup"] = Relationship(
+        back_populates="category",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    variations: list["Variation"] = Relationship(
+        back_populates="category",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 class ProductConfig(ProductConfigBase, table=True):
-    variation_option_id: int = Field(foreign_key="variationoption.id", primary_key=True)
-    product_id: int = Field(foreign_key="product.id", primary_key=True)
+    variation_option_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("variationoption.id", ondelete="CASCADE"),
+            primary_key=True,
+        )
+    )
+    product_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("product.id", ondelete="CASCADE"),
+            primary_key=True,
+        )
+    )
 
 
 class Product(ProductBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    product_group_id: int = Field(foreign_key="productgroup.id")
     product_group: "ProductGroup" = Relationship(back_populates="products")
     product_images: list["ProductImage"] = Relationship(back_populates="product")
     shopping_cart_items: list["ShoppingCartItem"] = Relationship(
@@ -50,27 +75,68 @@ class Product(ProductBase, table=True):
     variation_options: list["VariationOption"] = Relationship(
         back_populates="products", link_model=ProductConfig
     )
+    product_group_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("productgroup.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
 
 
 class ProductGroupVariation(ProductGroupVariationBase, table=True):
-    product_group_id: int = Field(foreign_key="productgroup.id", primary_key=True)
-    variation_id: int = Field(foreign_key="variation.id", primary_key=True)
+    product_group_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("productgroup.id", ondelete="CASCADE"),
+            primary_key=True,
+        )
+    )
+    variation_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("variation.id", ondelete="CASCADE"),
+            primary_key=True,
+        )
+    )
 
 
 class ProductGroup(ProductGroupBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    category_id: int = Field(foreign_key="category.id")
-    products: list["Product"] = Relationship(back_populates="product_group")
-    reviews: list["Review"] = Relationship(back_populates="product_group")
+    category_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("category.id", ondelete="CASCADE"))
+    )
     category: "Category" = Relationship(back_populates="product_groups")
+    products: list["Product"] = Relationship(
+        back_populates="product_group",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
+    )
+
+    reviews: list["Review"] = Relationship(
+        back_populates="product_group",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
+    )
+
     variations: list["Variation"] = Relationship(
-        back_populates="product_groups", link_model=ProductGroupVariation
+        back_populates="product_groups",
+        link_model=ProductGroupVariation,
     )
 
 
 class Variation(VariationBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    category_id: int = Field(foreign_key="category.id")
+    category_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("category.id", ondelete="CASCADE"),
+        )
+    )
     category: "Category" = Relationship(back_populates="variations")
     variation_options: list["VariationOption"] = Relationship(
         back_populates="variation"
@@ -82,7 +148,12 @@ class Variation(VariationBase, table=True):
 
 class VariationOption(VariationOptionBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    variation_id: int = Field(foreign_key="variation.id")
+    variation_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("variation.id", ondelete="CASCADE"),
+        )
+    )
     variation: "Variation" = Relationship(back_populates="variation_options")
     products: list["Product"] = Relationship(
         back_populates="variation_options", link_model=ProductConfig
@@ -91,7 +162,12 @@ class VariationOption(VariationOptionBase, table=True):
 
 class ProductImage(ProductImageBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    product_id: int = Field(foreign_key="product.id")
+    product_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("product.id", ondelete="CASCADE"),
+        )
+    )
     product: Product = Relationship(back_populates="product_images")
 
     url: str
@@ -124,8 +200,20 @@ class Action(ActionBase, table=True):
 
 
 class Review(ReviewBase, table=True):
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "product_group_id", name="uq_review_user_product_group"
+        ),
+    )
+
     id: int | None = Field(default=None, primary_key=True)
-    product_group_id: int = Field(foreign_key="productgroup.id")
+    product_group_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("productgroup.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     user_id: int = Field(foreign_key="user.id")
     product_group: "ProductGroup" = Relationship(back_populates="reviews")
     user: "User" = Relationship(back_populates="reviews")
@@ -140,7 +228,13 @@ class ShoppingCart(ShoppingCartBase, table=True):
 
 class ShoppingCartItem(ShoppingCartItemBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    product_id: int = Field(foreign_key="product.id")
+    product_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("product.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     shopping_cart_id: int = Field(foreign_key="shoppingcart.id")
     product: "Product" = Relationship(back_populates="shopping_cart_items")
     shopping_cart: "ShoppingCart" = Relationship(back_populates="items")

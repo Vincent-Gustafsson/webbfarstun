@@ -3,7 +3,10 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException, UploadFile, status
+from sqlmodel import Session
+
+from .models import ProductImage
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 MEDIA_ROOT = BASE_DIR / "media"
@@ -66,3 +69,18 @@ def resolve_media_path(db_url: str) -> Path:
         raise HTTPException(status_code=400, detail="Invalid image path")
 
     return abs_path
+
+
+def delete_product_image_impl(session: Session, product_image: ProductImage) -> None:
+    if product_image.url:
+        abs_path = resolve_media_path(product_image.url)
+        if abs_path.exists():
+            try:
+                abs_path.unlink()
+            except OSError:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to remove image file from disk",
+                )
+
+    session.delete(product_image)

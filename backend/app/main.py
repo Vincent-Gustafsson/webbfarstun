@@ -12,6 +12,7 @@ from .products.api.category import router as category_router
 from .products.api.product import router as products_router
 from .products.api.product_group import router as product_group_router
 from .products.api.product_image import router as product_image_router
+from .products.api.review import product_reviews_router
 from .products.api.review import router as review_router
 from .products.api.shopping_cart import router as shopping_cart_router
 from .products.api.shopping_cart_item import router as shopping_cart_item_router
@@ -58,6 +59,7 @@ app.include_router(product_image_router)
 app.include_router(user_router)
 app.include_router(action_router)
 app.include_router(review_router)
+app.include_router(product_reviews_router)
 app.include_router(shopping_cart_router)
 app.include_router(shopping_cart_item_router)
 
