@@ -1,54 +1,95 @@
 <script setup lang="ts">
+import { computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import ReviewForm from '@/components/ReviewForm.vue'
+import StarRating from '@/components/StarRating.vue'
+import { useProductStore } from '@/stores/products'
+import { useReviewStore } from '@/stores/reviews'
+import { useUserStore } from '@/stores/user'
+
+const productStore = useProductStore()
+const { activeProduct } = storeToRefs(productStore)
+
+const reviewStore = useReviewStore()
+const { activeReviews, loading, error } = storeToRefs(reviewStore)
+
+const productGroupId = computed(() => activeProduct.value?.product_group_id ?? null)
+
+const userStore = useUserStore()
+const userId = computed(() => userStore.me?.id ?? null)
+
+async function submitReview(payload: { score: number; comment: string }) {
+  if (productGroupId.value == null) return
+
+  await reviewStore.create({
+    product_group_id: productGroupId.value,
+    score: payload.score,
+    comment: payload.comment,
+  })
+}
+
+watch(
+  productGroupId,
+  async (pgId) => {
+    if (pgId == null) return
+    await reviewStore.fetchForProductGroup(pgId)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <div class="w-full card bg-base-100 shadow p-4">
-    <ReviewForm />
+    <ReviewForm :loading="reviewStore.loading" @submit="submitReview" />
 
     <div class="divider"></div>
 
-    <ul class="list">
-      <li class="p-4 pb-2 text-xs opacity-60 tracking-wide">All reviews</li>
+    <div class="flex items-center justify-between">
+      <div class="text-xs opacity-60 tracking-wide">All reviews</div>
+      <button
+        class="btn btn-ghost btn-sm"
+        type="button"
+        :disabled="loading || productGroupId == null"
+        @click="productGroupId && reviewStore.fetchForProductGroup(productGroupId, { force: true })"
+      >
+        Refresh
+      </button>
+    </div>
 
-      <li class="list-row">
-        <div>
-          <img
-            class="size-10 rounded-box"
-            src="https://img.daisyui.com/images/profile/demo/1@94.webp"
-          />
+    <div v-if="loading" class="mt-3">
+      <div class="skeleton h-6 w-full mb-2"></div>
+      <div class="skeleton h-6 w-full mb-2"></div>
+      <div class="skeleton h-6 w-full"></div>
+    </div>
+
+    <div v-else-if="error" class="alert alert-error mt-3">
+      <span>{{ error }}</span>
+    </div>
+
+    <div v-else-if="activeReviews.length === 0" class="mt-3 text-sm opacity-70">
+      No reviews yet.
+    </div>
+
+    <ul v-else class="list mt-3">
+      <li v-for="r in activeReviews" :key="r.id" class="list-row">
+        <div class="list-col-grow min-w-0">
+          <div class="flex gap-2">
+            <div class="font-semibold">{{ r.user.name }}</div>
+            <StarRating :model-value="r.score" size-class="rating-xs" bg-class="bg-accent" />
+          </div>
+
+          <div class="text-sm opacity-80">
+            {{ r.comment }}
+          </div>
         </div>
-        <div>
-          <div>Dio Lupa</div>
-          <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
-        </div>
-        <button class="btn btn-square btn-ghost">
-          <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <g
-              stroke-linejoin="round"
-              stroke-linecap="round"
-              stroke-width="2"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path d="M6 3L20 12 6 21 6 3z"></path>
-            </g>
-          </svg>
-        </button>
-        <button class="btn btn-square btn-ghost">
-          <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <g
-              stroke-linejoin="round"
-              stroke-linecap="round"
-              stroke-width="2"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path
-                d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-              ></path>
-            </g>
-          </svg>
+
+        <button
+          @click="reviewStore.remove(r.id)"
+          v-if="r.user.id === userId"
+          :disabled="loading"
+          class="btn btn-sm btn-error justify-self-end"
+        >
+          Delete
         </button>
       </li>
     </ul>

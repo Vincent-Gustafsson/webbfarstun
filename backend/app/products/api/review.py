@@ -1,43 +1,63 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from ...auth.deps import get_current_user
 from ...db import get_session
 from ..models import ProductGroup, Review, User
-from ..schemas import ReviewCreate, ReviewPublic, ReviewUpdate
+from ..schemas import ReviewCreate, ReviewPublic
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
+product_reviews_router = APIRouter(prefix="/products", tags=["reviews"])
 
 
 @router.post("/", response_model=ReviewPublic, status_code=status.HTTP_201_CREATED)
 def create_review(
-    *, session: Session = Depends(get_session), review_data: ReviewCreate
+    *,
+    session: Session = Depends(get_session),
+    review_data: ReviewCreate,
+    current_user: User = Depends(get_current_user),
 ):
     if not session.get(ProductGroup, review_data.product_group_id):
         raise HTTPException(
             status_code=400,
             detail={"errors": {"product_group_id": "Product group not found"}},
         )
-    if not session.get(User, review_data.user_id):
+
+    db_review = Review.model_validate(
+        {**review_data.model_dump(), "user_id": current_user.id}
+    )
+
+    session.add(db_review)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
         raise HTTPException(
-            status_code=400, detail={"errors": {"user_id": "User not found"}}
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You already have a review for this product",
         )
 
-    db_review = Review.model_validate(review_data)
-    session.add(db_review)
-    session.commit()
     session.refresh(db_review)
     return db_review
 
 
-@router.get("/", response_model=list[ReviewPublic])
-def get_reviews(
+@product_reviews_router.get(
+    "/{product_group_id}/reviews", response_model=list[ReviewPublic]
+)
+def get_reviews_for_product_group(
+    product_group_id: int,
     *,
     session: Session = Depends(get_session),
-    offset: int = 0,
-    limit: int = Query(default=100, le=100),
 ):
-    reviews = session.exec(select(Review).offset(offset).limit(limit)).all()
-    return reviews
+    if not session.get(ProductGroup, product_group_id):
+        raise HTTPException(
+            status_code=404,
+            detail={"errors": {"product_group_id": "Product group not found"}},
+        )
+
+    stmt = select(Review).where(Review.product_group_id == product_group_id)
+    return session.exec(stmt).all()
 
 
 @router.get("/{review_id}", response_model=ReviewPublic)
@@ -50,48 +70,25 @@ def get_review(*, review_id: int, session: Session = Depends(get_session)):
     return review
 
 
-@router.patch("/{review_id}", response_model=ReviewPublic)
-def update_review(
+@router.delete("/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_review(
     *,
     review_id: int,
-    review_data: ReviewUpdate,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
-    db_review = session.get(Review, review_id)
-    if not db_review:
-        raise HTTPException(
-            status_code=404, detail={"errors": {"review_id": "Review not found"}}
-        )
-
-    update_dict = review_data.model_dump(exclude_unset=True)
-
-    if "product_group_id" in update_dict and not session.get(
-        ProductGroup, update_dict["product_group_id"]
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail={"errors": {"product_group_id": "Product group not found"}},
-        )
-
-    if "user_id" in update_dict and not session.get(User, update_dict["user_id"]):
-        raise HTTPException(
-            status_code=400, detail={"errors": {"user_id": "User not found"}}
-        )
-
-    db_review.sqlmodel_update(update_dict)
-    session.add(db_review)
-    session.commit()
-    session.refresh(db_review)
-    return db_review
-
-
-@router.delete("/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_review(*, review_id: int, session: Session = Depends(get_session)):
     review = session.get(Review, review_id)
     if not review:
         raise HTTPException(
             status_code=404, detail={"errors": {"review_id": "Review not found"}}
         )
+
+    if review.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"errors": {"review": "You can only delete your own review"}},
+        )
+
     session.delete(review)
     session.commit()
     return None

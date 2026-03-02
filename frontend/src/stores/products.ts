@@ -10,6 +10,9 @@ export const useProductStore = defineStore('product', {
     activeProduct: null as ProductPublic | null,
     loading: false,
     error: null as string | null,
+
+    availability: {} as Record<number, boolean>, // option_id -> available
+    availabilityLoading: false,
   }),
 
   getters: {
@@ -62,6 +65,7 @@ export const useProductStore = defineStore('product', {
           product_group_id: product.product_group_id,
           category_id: (product as any).category_id ?? null,
           options: product.options ?? [],
+          review_score: product.review_score ?? 0,
         })
 
         return product
@@ -88,10 +92,10 @@ export const useProductStore = defineStore('product', {
           stock_qty: created.stock_qty,
           sku: created.sku ?? null,
           product_group_id: created.product_group_id,
-          category_id: (payload as any).category_id ?? null,
+          category_id: (created as any).category_id ?? null,
           options: created.options ?? [],
+          review_score: created.review_score ?? 0,
         })
-
         return created
       } catch (err: unknown) {
         this.error = getErrorMessage(err)
@@ -139,6 +143,21 @@ export const useProductStore = defineStore('product', {
         this.error = getErrorMessage(err) || 'Failed to delete item'
         alert('Could not delete product.')
       }
+    },
+
+    async fetchAvailability(productGroupId: number, selectedOptionIds: number[]) {
+      this.availabilityLoading = true
+      try {
+        const rows = await productService.getAvailability(productGroupId, selectedOptionIds)
+        this.availability = Object.fromEntries(rows.map((r) => [r.option_id, r.available]))
+        return rows
+      } finally {
+        this.availabilityLoading = false
+      }
+    },
+
+    async resolveVariantProduct(productGroupId: number, selectedOptionIds: number[]) {
+      return productService.resolveProduct(productGroupId, selectedOptionIds)
     },
   },
 })

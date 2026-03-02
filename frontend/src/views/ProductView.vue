@@ -1,14 +1,76 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useProductStore } from '@/stores/products'
+
 import ProductInformation from '@/components/ProductInformation.vue'
 import ProductReviews from '@/components/ProductReviews.vue'
 
-const props = defineProps<{ id: string }>()
+import { useRoute, useRouter } from 'vue-router'
 
+const router = useRouter()
+const route = useRoute()
+
+const props = defineProps<{ id: string }>()
 const productStore = useProductStore()
-const { activeProduct, loading, error } = storeToRefs(productStore)
+const { activeProduct, loading, error, availability } = storeToRefs(productStore)
+
+// local selection: variation_id -> option_id|null
+const selectedByVariation = ref<Record<number, number | null>>({})
+
+function selectedOptionIds() {
+  return Object.values(selectedByVariation.value).filter((x): x is number => x != null)
+}
+
+function isCompleteSelection() {
+  const vars = activeProduct.value?.variations ?? []
+  return vars.length > 0 && vars.every((v: any) => selectedByVariation.value[v.id] != null)
+}
+
+function isAvailable(optionId: number) {
+  // before first availability fetch, treat as available
+  const v = availability.value[optionId]
+  return v === undefined ? true : v
+}
+
+async function refreshAvailability() {
+  const p = activeProduct.value
+  if (!p) return
+  await productStore.fetchAvailability(p.product_group_id, selectedOptionIds())
+
+  // if current selection became invalid due to another change, clear it
+  for (const v of p.variations as any[]) {
+    const picked = selectedByVariation.value[v.id]
+    if (picked != null && !isAvailable(picked)) {
+      selectedByVariation.value[v.id] = null
+    }
+  }
+}
+
+async function maybeResolveAndLoad() {
+  const p = activeProduct.value
+  if (!p) return
+  if (!isCompleteSelection()) return
+
+  const res = await productStore.resolveVariantProduct(p.product_group_id, selectedOptionIds())
+  if (!res?.product_id) return
+
+  const currentId = Number(route.params.id)
+  if (currentId === res.product_id) return
+
+  // Update URL (replace avoids polluting history)
+  await router.replace({
+    name: route.name as string, // assumes you have a named route for product page
+    params: { ...route.params, id: String(res.product_id) },
+    query: route.query,
+  })
+}
+
+async function selectOption(variationId: number, optionId: number) {
+  selectedByVariation.value[variationId] = optionId
+  await refreshAvailability()
+  await maybeResolveAndLoad()
+}
 
 async function load() {
   const id = Number(props.id)
@@ -18,6 +80,22 @@ async function load() {
 
 onMounted(load)
 watch(() => props.id, load)
+
+// When activeProduct changes (initial load or after resolve), initialize selection then fetch availability
+watch(
+  () => activeProduct.value,
+  async (p) => {
+    if (!p) return
+    // Initialize selection from the currently loaded product if your API provides it:
+    // expects p.variations[].selected_option_id
+    const init: Record<number, number | null> = {}
+    for (const v of p.variations as any[]) init[v.id] = v.selected_option_id ?? null
+    selectedByVariation.value = init
+
+    await refreshAvailability()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -33,59 +111,41 @@ watch(() => props.id, load)
       <ProductReviews />
     </div>
 
-    <div class="flex-1 card bg-base-100 shadow p-4">
-      <h2 class="text-4xl text-accent text-center">(Options)</h2>
-
+    <div class="flex-1 card bg-base-100 shadow p-4 gap-4">
       <div v-for="v in activeProduct.variations" :key="v.id" class="form-control w-full max-w-xs">
         <label class="label">
           <span class="label-text">{{ v.name }}</span>
         </label>
 
-        <select class="select select-bordered" :value="v.selected_option_id ?? ''">
-          <option disabled value="">Choose {{ v.name }}</option>
-          <option v-for="opt in v.options" :key="opt.id" :value="opt.id">
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            v-for="opt in v.options"
+            :key="opt.id"
+            type="button"
+            class="btn w-full"
+            :disabled="!isAvailable(opt.id)"
+            :class="[
+              selectedByVariation[v.id] === opt.id ? 'btn-secondary' : 'btn-outline',
+              !isAvailable(opt.id) ? 'opacity-50 line-through' : '',
+            ]"
+            @click="selectOption(v.id, opt.id)"
+          >
             {{ opt.value }}
-          </option>
-        </select>
+          </button>
+        </div>
+
+        <div v-if="selectedByVariation[v.id] == null" class="text-xs opacity-70 mt-2">
+          Choose {{ v.name }}
+        </div>
       </div>
 
       <div class="divider"></div>
       <h2 class="text-4xl text-center">{{ activeProduct.price }} kr</h2>
       <div class="divider"></div>
-      <button class="btn btn-secondary" type="button" @click.stop>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="white" class="size-5" viewBox="0 0 640 512">
-          <path
-            d="M24-16C10.7-16 0-5.3 0 8S10.7 32 24 32l45.3 0c3.9 0 7.2 2.8 7.9 6.6l52.1 286.3c6.2 34.2 36 59.1 70.8 59.1L456 384c13.3 0 24-10.7 24-24s-10.7-24-24-24l-255.9 0c-11.6 0-21.5-8.3-23.6-19.7l-5.1-28.3 303.6 0c30.8 0 57.2-21.9 62.9-52.2L568.9 69.9C572.6 50.2 557.5 32 537.4 32l-412.7 0-.4-2c-4.8-26.6-28-46-55.1-46L24-16zM208 512a48 48 0 1 0 0-96 48 48 0 1 0 0 96zm224 0a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"
-          />
-        </svg>
+
+      <button class="btn btn-accent" type="button" :disabled="!isCompleteSelection()">
         Lägg i kundvagn
       </button>
     </div>
   </div>
-
-  <!--
-  <div v-if="loading" class="skeleton h-32 w-full"></div>
-
-  <div v-else-if="error" class="alert alert-error">
-    <span>{{ error }}</span>
-  </div>
-
-  <div v-else-if="activeProduct" class="card bg-base-100 shadow">
-    <div class="card-body">
-      <h1 class="card-title">{{ activeProduct.name }}</h1>
-      <div class="text-lg font-semibold">{{ activeProduct.price }} kr</div>
-      <div class="flex items-center gap-2">
-        <div
-          class="w-2 h-2 rounded-full"
-          :class="activeProduct.stock_qty > 0 ? 'bg-success' : 'bg-error'"
-        />
-        <span>{{ activeProduct.stock_qty }} st</span>
-      </div>
-
-      <div class="card-actions justify-end mt-4">
-        <button class="btn btn-secondary" type="button">Lägg i kundvagn</button>
-      </div>
-    </div>
-  </div>
-  -->
 </template>

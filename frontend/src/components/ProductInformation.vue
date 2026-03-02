@@ -31,10 +31,14 @@ const nextIndex = (idx: number) =>
         </div>
 
         <div>
-          <div class="tooltip" data-tip="3.2">
-            <StarRating :model-value="3.2" size-class="rating-xs" bg-class="bg-accent" />
+          <div class="tooltip" :data-tip="activeProduct.review_score">
+            <StarRating
+              :model-value="activeProduct.review_score"
+              size-class="rating-xs"
+              bg-class="bg-accent"
+            />
           </div>
-          <p class="text-xs text-end">0 reviews</p>
+          <p class="text-xs text-end">{{ activeProduct.review_count }} reviews</p>
         </div>
       </div>
 

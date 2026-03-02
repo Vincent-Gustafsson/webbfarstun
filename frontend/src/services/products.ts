@@ -7,8 +7,17 @@ import type {
   ProductUpdate,
 } from '../types/product'
 
-export const productImageUrl = (productImageId: number) =>
-  `/api/product-images/${productImageId}/file`
+import type {
+  AvailabilityRequest,
+  OptionAvailability,
+  ResolveRequest,
+  ResolveResponse,
+} from '../types/variant'
+
+export const productImageUrl = (productImageId: number) => {
+  if (!productImageId) return null
+  return `/api/product-images/${productImageId}/file`
+}
 
 export default {
   async getAll(params?: ProductListParams) {
@@ -33,5 +42,18 @@ export default {
 
   async delete(id: number) {
     return http.delete<void>(`/products/${id}`)
+  },
+
+  async getAvailability(productGroupId: number, selectedOptionIds: number[]) {
+    const payload: AvailabilityRequest = { selected_option_ids: selectedOptionIds }
+    return http.post<OptionAvailability[]>(
+      `/product-groups/${productGroupId}/availability`,
+      payload,
+    )
+  },
+
+  async resolveProduct(productGroupId: number, selectedOptionIds: number[]) {
+    const payload: ResolveRequest = { selected_option_ids: selectedOptionIds }
+    return http.post<ResolveResponse>(`/product-groups/${productGroupId}/resolve`, payload)
   },
 }

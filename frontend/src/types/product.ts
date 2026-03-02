@@ -46,6 +46,9 @@ export interface ProductPublic extends ProductBase {
   options: number[]
   images: ProductImagePublic[]
   variations: VariationDropdownPublic[]
+
+  review_count: number
+  review_score: number
 }
 
 export interface ProductListItem {
@@ -60,6 +63,8 @@ export interface ProductListItem {
   default_image?: number | null
 
   options: number[]
+
+  review_score: number
 }
 
 export interface ProductListParams {

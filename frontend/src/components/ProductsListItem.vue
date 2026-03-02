@@ -47,8 +47,12 @@ function goToDetails() {
             :class="product.stock_qty > 0 ? 'bg-success' : 'bg-error'"
           ></div>
           {{ product.stock_qty }} st
-          <div class="tooltip" data-tip="3.2">
-            <StarRating :model-value="3.2" size-class="rating-xs" bg-class="bg-accent" />
+          <div class="tooltip" :data-tip="product.review_score">
+            <StarRating
+              :model-value="product.review_score"
+              size-class="rating-xs"
+              bg-class="bg-accent"
+            />
           </div>
         </div>
       </div>
