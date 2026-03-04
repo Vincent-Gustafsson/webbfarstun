@@ -7,15 +7,15 @@ import ProductView from '@/views/ProductView.vue'
 import UserRegisterView from '@/views/UserRegisterView.vue'
 import UserLoginView from '@/views/UserLoginView.vue'
 import AdminView from '@/views/admin/AdminView.vue'
-import AdminCreateProductView from '@/views/admin/AdminCreateProductView.vue'
-import AdminCategoryView from '@/views/admin/AdminCategoryView.vue'
-import AdminProductGroupView from '@/views/admin/AdminCreateProductGroupView.vue'
-import AdminCategoryListView from '@/views/admin/AdminCategoryListView.vue'
-import AdminCategoryUpdate from '@/views/admin/AdminCategoryUpdateView.vue'
-import AdminProductListView from '@/views/admin/AdminProductListView.vue'
-import AdminProductUpdate from '@/views/admin/AdminProductUpdateView.vue'
-import AdminProductGroupListView from '@/views/admin/AdminProductGroupListView.vue'
-import AdminProductGroupUpdateView from '@/views/admin/AdminProductGroupUpdateView.vue'
+import AdminCreateProductView from '@/views/admin/product/CreateView.vue'
+import AdminCategoryView from '@/views/admin/category/CreateView.vue'
+import AdminProductGroupView from '@/views/admin/productGroup/CreateView.vue'
+import AdminCategoryListView from '@/views/admin/category/ListView.vue'
+import AdminCategoryUpdateView from '@/views/admin/category/UpdateView.vue'
+import AdminProductListView from '@/views/admin/product/ListView.vue'
+import AdminProductUpdateView from '@/views/admin/product/UpdateView.vue'
+import AdminProductGroupListView from '@/views/admin/productGroup/ListView.vue'
+import AdminProductGroupUpdateView from '@/views/admin/productGroup/UpdateView.vue'
 import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
@@ -104,13 +104,13 @@ const router = createRouter({
         {
           path: 'categories/:category_id/update',
           name: 'admin-category-update',
-          component: AdminCategoryUpdate,
+          component: AdminCategoryUpdateView,
           props: true,
         },
         {
           path: 'products/:product_id/update',
           name: 'admin-product-update',
-          component: AdminProductUpdate,
+          component: AdminProductUpdateView,
           props: true,
         },
         {

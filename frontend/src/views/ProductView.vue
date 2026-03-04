@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useProductStore } from '@/stores/products'
+import { useCartStore } from '@/stores/cart'
 
 import ProductInformation from '@/components/ProductInformation.vue'
 import ProductReviews from '@/components/ProductReviews.vue'
@@ -14,6 +15,24 @@ const route = useRoute()
 const props = defineProps<{ id: string }>()
 const productStore = useProductStore()
 const { activeProduct, loading, error, availability } = storeToRefs(productStore)
+
+const cartStore = useCartStore()
+async function handleAddToCart() {
+  if (!activeProduct.value || !isCompleteSelection()) return
+
+  try {
+    await cartStore.addToCart({
+      product_id: activeProduct.value.id,
+      qty: 1, // You could also add a 'quantity' ref to the UI if needed
+    })
+
+    // Optional: You could trigger a success message or open the cart dropdown here
+    console.log('Product added to cart!')
+  } catch (err) {
+    // Error is already handled in the store, but you can add component-specific logic here
+    console.error('Failed to add to cart')
+  }
+}
 
 // local selection: variation_id -> option_id|null
 const selectedByVariation = ref<Record<number, number | null>>({})
@@ -143,7 +162,12 @@ watch(
       <h2 class="text-4xl text-center">{{ activeProduct.price }} kr</h2>
       <div class="divider"></div>
 
-      <button class="btn btn-accent" type="button" :disabled="!isCompleteSelection()">
+      <button
+        class="btn btn-accent"
+        type="button"
+        :disabled="!isCompleteSelection()"
+        @click="handleAddToCart"
+      >
         Lägg i kundvagn
       </button>
     </div>
