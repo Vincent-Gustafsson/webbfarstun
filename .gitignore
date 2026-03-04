@@ -211,3 +211,5 @@ pyrightconfig.json
 node_modules/
 
 media/
+
+.zed
