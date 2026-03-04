@@ -275,23 +275,6 @@ class ReviewPublic(ReviewBase):
     user: ReviewUser
 
 
-class ShoppingCartBase(SQLModel):
-    user_id: int
-
-
-class ShoppingCartCreate(ShoppingCartBase):
-    id: int
-    user_id: int
-
-
-class ShoppingCartPublic(ShoppingCartBase):
-    id: int
-
-
-class ShoppingCartUpdate(SQLModel):
-    user_id: int | None = None
-
-
 class ShoppingCartItemBase(SQLModel):
     qty: int
 
@@ -301,16 +284,25 @@ class ShoppingCartItemCreate(ShoppingCartItemBase):
     shopping_cart_id: int
 
 
-class ShoppingCartItemPublic(ShoppingCartItemBase):
-    id: int
+class ShoppingCartItemCreateInCart(ShoppingCartItemBase):
     product_id: int
-    shopping_cart_id: int
 
 
 class ShoppingCartItemUpdate(SQLModel):
-    product_id: int | None = None
-    shopping_cart_id: int | None = None
-    qty: int | None = None
+    qty: int
+
+
+class ShoppingCartItemPublic(SQLModel):
+    name: str
+    image_id: int | None = None
+    price: int
+    stock_qty: int
+    cart_qty: int
+    id: int
+
+
+class ShoppingCartPublic(SQLModel):
+    items: list[ShoppingCartItemPublic]
 
 
 class TokenOut(SQLModel):

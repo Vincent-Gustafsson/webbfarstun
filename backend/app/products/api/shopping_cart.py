@@ -1,12 +1,17 @@
 from app.auth.deps import get_current_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select
 
 from ...db import get_session
-from ..models import ShoppingCart, ShoppingCartItem, User
-from ..schemas import ShoppingCartCreate, ShoppingCartPublic, ShoppingCartUpdate
+from ..models import Product, ProductImage, ShoppingCart, ShoppingCartItem, User
+from ..schemas import (
+    ShoppingCartItemCreateInCart,
+    ShoppingCartItemPublic,
+    ShoppingCartItemUpdate,
+    ShoppingCartPublic,
+)
 
 router = APIRouter(prefix="/cart", tags=["cart"])
 
@@ -38,125 +43,165 @@ def get_or_create_cart(session: Session, user_id: int) -> ShoppingCart:
     return cart
 
 
+def build_cart_public(session: Session, cart: ShoppingCart) -> ShoppingCartPublic:
+    cart_items = []
+    for item in cart.items:
+        image = session.exec(
+            select(ProductImage).where(
+                ProductImage.product_id == item.product.id,
+                ProductImage.is_default,
+            )
+        ).first()
+
+        cart_items.append(
+            ShoppingCartItemPublic(
+                id=item.id,
+                name=item.product.name,
+                image_id=(image.id if image else None),
+                price=item.product.price,
+                stock_qty=item.product.stock_qty,
+                cart_qty=item.qty,
+            )
+        )
+
+    return ShoppingCartPublic(items=cart_items)
+
+
 @router.get("/", response_model=ShoppingCartPublic, status_code=status.HTTP_200_OK)
 def get_cart(
     *,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return get_or_create_cart(session, current_user.id)
+    cart = get_or_create_cart(session, current_user.id)
+    return build_cart_public(session, cart)
 
 
-"""
 @router.post(
-    "/", response_model=ShoppingCartPublic, status_code=status.HTTP_201_CREATED
+    "/items", response_model=ShoppingCartPublic, status_code=status.HTTP_201_CREATED
 )
-def create_shopping_cart(
-    *, session: Session = Depends(get_session), shopping_cart_data: ShoppingCartCreate
+def create_cart_item(
+    *,
+    shopping_cart_item_data: ShoppingCartItemCreateInCart,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
-    if not session.get(User, shopping_cart_data.user_id):
+    if shopping_cart_item_data.qty < 1:
         raise HTTPException(
-            status_code=400, detail={"errors": {"user_id": "User not found"}}
+            status_code=400,
+            detail={"errors": {"qty": "Quantity must be at least 1"}},
         )
 
-    user_cart_exists = session.exec(
-        select(ShoppingCart).where(ShoppingCart.user_id == shopping_cart_data.user_id)
+    product = session.get(Product, shopping_cart_item_data.product_id)
+    if product is None:
+        raise HTTPException(
+            status_code=400,
+            detail={"errors": {"product_id": "Product not found"}},
+        )
+
+    cart = get_or_create_cart(session, current_user.id)
+
+    shopping_cart_item = session.exec(
+        select(ShoppingCartItem).where(
+            ShoppingCartItem.shopping_cart_id == cart.id,
+            ShoppingCartItem.product_id == shopping_cart_item_data.product_id,
+        )
     ).first()
-    if user_cart_exists:
+
+    if shopping_cart_item is None:
+        shopping_cart_item = ShoppingCartItem(
+            shopping_cart_id=cart.id,
+            product_id=shopping_cart_item_data.product_id,
+            qty=shopping_cart_item_data.qty,
+        )
+    else:
         raise HTTPException(
             status_code=409,
+            detail={"errors": {"product_id": "This product is already in your cart"}},
+        )
+
+    session.add(shopping_cart_item)
+    session.commit()
+    session.refresh(cart)
+    cart = get_or_create_cart(session, current_user.id)
+    return build_cart_public(session, cart)
+
+
+@router.delete("/items/{shopping_cart_item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_cart_item(
+    *,
+    shopping_cart_item_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    cart = get_or_create_cart(session, current_user.id)
+    shopping_cart_item = session.exec(
+        select(ShoppingCartItem).where(
+            ShoppingCartItem.id == shopping_cart_item_id,
+            ShoppingCartItem.shopping_cart_id == cart.id,
+        )
+    ).first()
+    if shopping_cart_item is None:
+        raise HTTPException(
+            status_code=404,
             detail={
-                "errors": {"user_id": "Shopping cart already exists for this user"}
+                "errors": {
+                    "shopping_cart_item_id": "Shopping cart item not found in cart"
+                }
             },
         )
 
-    db_shopping_cart = ShoppingCart.model_validate(shopping_cart_data)
-    session.add(db_shopping_cart)
-    session.commit()
-    session.refresh(db_shopping_cart)
-    return db_shopping_cart
-
-
-@router.get("/", response_model=list[ShoppingCartPublic])
-def get_shopping_carts(
-    *,
-    session: Session = Depends(get_session),
-    offset: int = 0,
-    limit: int = Query(default=100, le=100),
-):
-    shopping_carts = session.exec(
-        select(ShoppingCart).offset(offset).limit(limit)
-    ).all()
-    return shopping_carts
-
-
-@router.get("/{shopping_cart_id}", response_model=ShoppingCartPublic)
-def get_shopping_cart(
-    *, shopping_cart_id: int, session: Session = Depends(get_session)
-):
-    shopping_cart = session.get(ShoppingCart, shopping_cart_id)
-    if not shopping_cart:
-        raise HTTPException(
-            status_code=404,
-            detail={"errors": {"shopping_cart_id": "Shopping cart not found"}},
-        )
-    return shopping_cart
-
-
-@router.patch("/{shopping_cart_id}", response_model=ShoppingCartPublic)
-def update_shopping_cart(
-    *,
-    shopping_cart_id: int,
-    shopping_cart_data: ShoppingCartUpdate,
-    session: Session = Depends(get_session),
-):
-    db_shopping_cart = session.get(ShoppingCart, shopping_cart_id)
-    if not db_shopping_cart:
-        raise HTTPException(
-            status_code=404,
-            detail={"errors": {"shopping_cart_id": "Shopping cart not found"}},
-        )
-
-    update_dict = shopping_cart_data.model_dump(exclude_unset=True)
-
-    if "user_id" in update_dict:
-        if not session.get(User, update_dict["user_id"]):
-            raise HTTPException(
-                status_code=400, detail={"errors": {"user_id": "User not found"}}
-            )
-
-        user_cart_exists = session.exec(
-            select(ShoppingCart).where(
-                ShoppingCart.user_id == update_dict["user_id"],
-                ShoppingCart.id != shopping_cart_id,
-            )
-        ).first()
-        if user_cart_exists:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "errors": {"user_id": "Shopping cart already exists for this user"}
-                },
-            )
-
-    db_shopping_cart.sqlmodel_update(update_dict)
-    session.add(db_shopping_cart)
-    session.commit()
-    session.refresh(db_shopping_cart)
-    return db_shopping_cart
-
-
-@router.delete("/{shopping_cart_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_shopping_cart(
-    *, shopping_cart_id: int, session: Session = Depends(get_session)
-):
-    shopping_cart = session.get(ShoppingCart, shopping_cart_id)
-    if not shopping_cart:
-        raise HTTPException(
-            status_code=404,
-            detail={"errors": {"shopping_cart_id": "Shopping cart not found"}},
-        )
-    session.delete(shopping_cart)
+    session.delete(shopping_cart_item)
     session.commit()
     return None
-"""
+
+
+@router.patch("/items/{shopping_cart_item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def update_cart_item_qty(
+    *,
+    shopping_cart_item_id: int,
+    shopping_cart_item_data: ShoppingCartItemUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    if shopping_cart_item_data.qty < 1:
+        raise HTTPException(
+            status_code=400,
+            detail={"errors": {"qty": "Quantity must be at least 1"}},
+        )
+
+    cart = get_or_create_cart(session, current_user.id)
+    shopping_cart_item = session.exec(
+        select(ShoppingCartItem).where(
+            ShoppingCartItem.id == shopping_cart_item_id,
+            ShoppingCartItem.shopping_cart_id == cart.id,
+        )
+    ).first()
+    if shopping_cart_item is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "errors": {
+                    "shopping_cart_item_id": "Shopping cart item not found in cart"
+                }
+            },
+        )
+
+    shopping_cart_item.qty = shopping_cart_item_data.qty
+    session.add(shopping_cart_item)
+    session.commit()
+    return None
+
+
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+def delete_cart_items(
+    *,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    cart = get_or_create_cart(session, current_user.id)
+    session.exec(
+        delete(ShoppingCartItem).where(ShoppingCartItem.shopping_cart_id == cart.id)
+    )
+    session.commit()
+    return None

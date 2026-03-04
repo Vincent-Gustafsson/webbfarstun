@@ -12,7 +12,6 @@ from .schemas import (
     ProductGroupVariationBase,
     ProductImageBase,
     ReviewBase,
-    ShoppingCartBase,
     ShoppingCartItemBase,
     UserBase,
     VariationBase,
@@ -219,7 +218,7 @@ class Review(ReviewBase, table=True):
     user: "User" = Relationship(back_populates="reviews")
 
 
-class ShoppingCart(ShoppingCartBase, table=True):
+class ShoppingCart(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", unique=True)
     user: "User" = Relationship(back_populates="shopping_cart")
