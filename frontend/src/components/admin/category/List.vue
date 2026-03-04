@@ -27,10 +27,7 @@ function onDelete(id: number, name?: string) {
       <div>
         <div class="text-xs uppercase font-semibold opacity-60">{{ c.name }}</div>
       </div>
-      <p class="list-col-wrap text-xs">
-        <span class="text-xs uppercase font-semibold">Description:</span>
-        {{ c.description }}
-      </p>
+
       <div class="list-col-wrap text-xs">
         <span class="text-xs uppercase font-semibold">Is_container: </span>
         <span

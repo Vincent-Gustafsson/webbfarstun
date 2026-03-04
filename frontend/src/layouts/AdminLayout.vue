@@ -8,7 +8,7 @@ const title = computed(() => {
   return (route.meta?.title as string) ?? 'Shop Panel'
 })
 
-const nav = [{ to: '/admin', label: 'Dashboard' }]
+const nav = [{ to: '/admin', label: 'Workflow' }]
 
 const createLinks = [
   { to: '/admin/products', label: 'Products' },
@@ -52,7 +52,6 @@ const UpdateLinks = [
 
         <div class="flex-1 px-4">
           <div class="font-semibold text-lg leading-none">{{ title }}</div>
-          <div class="text-xs opacity-60">Shop panel</div>
         </div>
       </nav>
 
@@ -69,7 +68,6 @@ const UpdateLinks = [
       <aside class="w-64 bg-base-200 min-h-full border-r border-base-content/10">
         <div class="px-4 py-4 text-center">
           <div class="font-bold text-lg">Manage</div>
-          <div class="text-xs opacity-60">Navigation</div>
         </div>
 
         <div class="px-3 pb-6 flex justify-center">

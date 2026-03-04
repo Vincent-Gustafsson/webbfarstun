@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ShoppingCart from '@/components/ShoppingCart.vue'
+
 import { computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import ThemeToggle from '@/components/ThemeToggle.vue'
@@ -37,7 +39,7 @@ onMounted(() => {
 
   <!-- Navbar -->
   <div class="bg-base-100 shadow">
-    <div class="navbar mx-auto max-w-7xl px-4 gap-3">
+    <div class="navbar mx-auto px-4 gap-3">
       <!-- Left -->
       <div class="flex-none">
         <RouterLink to="/" class="btn btn-ghost text-xl">Webbfarstun</RouterLink>
@@ -67,14 +69,15 @@ onMounted(() => {
 
       <!-- Right -->
       <div class="flex-none flex items-center gap-2">
+        <ThemeToggle />
         <RouterLink v-if="!isLoggedIn" to="/account/login" class="btn btn-ghost whitespace-nowrap">
           Login
         </RouterLink>
         <button v-else class="btn btn-ghost whitespace-nowrap" type="button" @click="logout">
           Logout
         </button>
-        <RouterLink to="/cart" class="btn btn-primary whitespace-nowrap">Cart</RouterLink>
-        <ThemeToggle />
+
+        <ShoppingCart />
       </div>
     </div>
   </div>
