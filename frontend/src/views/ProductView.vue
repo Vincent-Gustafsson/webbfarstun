@@ -3,6 +3,7 @@ import { onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useProductStore } from '@/stores/products'
 import { useCartStore } from '@/stores/cart'
+import { useUserStore } from '@/stores/user'
 
 import ProductInformation from '@/components/ProductInformation.vue'
 import ProductReviews from '@/components/ProductReviews.vue'
@@ -11,6 +12,8 @@ import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
+
+const users = useUserStore()
 
 const props = defineProps<{ id: string }>()
 const productStore = useProductStore()
@@ -25,13 +28,7 @@ async function handleAddToCart() {
       product_id: activeProduct.value.id,
       qty: 1, // You could also add a 'quantity' ref to the UI if needed
     })
-
-    // Optional: You could trigger a success message or open the cart dropdown here
-    console.log('Product added to cart!')
-  } catch (err) {
-    // Error is already handled in the store, but you can add component-specific logic here
-    console.error('Failed to add to cart')
-  }
+  } catch (err) {}
 }
 
 // local selection: variation_id -> option_id|null
@@ -162,14 +159,18 @@ watch(
       <h2 class="text-4xl text-center">{{ activeProduct.price }} kr</h2>
       <div class="divider"></div>
 
-      <button
-        class="btn btn-accent"
-        type="button"
-        :disabled="!isCompleteSelection()"
-        @click="handleAddToCart"
+      <div
+        class="tooltip"
+        :data-tip="users.isLoggedIn ? '' : 'You must be logged in to write a review'"
       >
-        Lägg i kundvagn
-      </button>
+        <button
+          class="btn btn-accent w-full"
+          :disabled="!isCompleteSelection() || !users.isLoggedIn"
+          @click="handleAddToCart"
+        >
+          Add to cart
+        </button>
+      </div>
     </div>
   </div>
 </template>

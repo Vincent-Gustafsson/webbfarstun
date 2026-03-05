@@ -25,10 +25,10 @@ export const useCartStore = defineStore('cart', () => {
     error.value = null
     try {
       const data = await cartService.getCart()
-      // Note: adjust 'data.items' if your http client wraps responses (e.g., data.data.items for raw Axios)
       items.value = data.items
     } catch (err: any) {
-      error.value = err.response?.data?.detail || 'Failed to fetch cart'
+      // FIXED: using err.data to match your custom http.ts wrapper
+      error.value = err.data?.detail || err.message || 'Failed to fetch cart'
       console.error(error.value)
     } finally {
       isLoading.value = false
@@ -40,22 +40,70 @@ export const useCartStore = defineStore('cart', () => {
     error.value = null
     try {
       const data = await cartService.addItem(payload)
-      // Your backend returns the fully updated cart on POST /items,
-      // so we can just replace the current state directly!
+      // Backend returns the fully updated cart on POST
       items.value = data.items
     } catch (err: any) {
-      // Handles the 400 Validation errors from your FastAPI route
-      error.value = err.response?.data?.detail?.errors || 'Failed to add item to cart'
+      error.value = err.data?.detail?.errors || err.message || 'Failed to add item to cart'
       console.error(error.value)
-      throw err // Optional: re-throw if you want to show a UI toast notification in the component
+      throw err
     } finally {
       isLoading.value = false
     }
   }
 
-  function clearCart() {
-    items.value = []
+  // NEW: Remove item
+  async function removeItem(itemId: number) {
+    isLoading.value = true
     error.value = null
+    try {
+      await cartService.removeItem(itemId)
+      // Backend returns 204 No Content, so we update the local state to match
+      items.value = items.value.filter((item) => item.id !== itemId)
+    } catch (err: any) {
+      error.value = err.data?.detail?.errors || err.message || 'Failed to remove item'
+      console.error(error.value)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // NEW: Update item quantity
+  async function updateQuantity(itemId: number, qty: number) {
+    if (qty < 1) return // Matches your backend validation rule
+
+    isLoading.value = true
+    error.value = null
+    try {
+      await cartService.updateItemQty(itemId, { qty })
+      // Backend returns 204 No Content, so we update the specific item locally
+      const itemToUpdate = items.value.find((item) => item.id === itemId)
+      if (itemToUpdate) {
+        itemToUpdate.cart_qty = qty
+      }
+    } catch (err: any) {
+      error.value = err.data?.detail?.errors || err.message || 'Failed to update quantity'
+      console.error(error.value)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // UPDATED: Clear the entire cart from the database
+  async function clearCart() {
+    isLoading.value = true
+    error.value = null
+    try {
+      await cartService.clearCart()
+      items.value = [] // Clear state only after backend confirms deletion
+    } catch (err: any) {
+      error.value = err.data?.detail || err.message || 'Failed to clear cart'
+      console.error(error.value)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
   }
 
   return {
@@ -66,6 +114,8 @@ export const useCartStore = defineStore('cart', () => {
     totalItemsCount,
     fetchCart,
     addToCart,
+    removeItem,
+    updateQuantity,
     clearCart,
   }
 })
