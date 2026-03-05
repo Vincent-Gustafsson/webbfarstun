@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import { useProductGroupStore } from '@/stores/admin/productGroup'
 import { useVariationStore } from '@/stores/admin/variation'
 import { useVariationOptionStore } from '@/stores/admin/variationOption'
@@ -69,15 +69,25 @@ function validate() {
 
 watch(
   () => props.productGroupId,
-  async () => {
-    if (!productGroupStore.productGroups?.length) await productGroupStore.fetchAll?.()
-    if (!variationStore.variations?.length) await variationStore.fetchAll?.()
-    if (!optionStore.variationOptions?.length) await optionStore.fetchAll?.()
+  async (newId) => {
+    if (!newId) {
+      rows.value = []
+      return
+    }
+
+    await Promise.all([
+      productGroupStore.fetchAll?.(),
+      variationStore.fetchAll?.(),
+      optionStore.fetchAll?.(),
+    ])
+
+    await nextTick()
 
     syncRowsFromModelValue()
   },
   { immediate: true },
 )
+
 function idsKey(ids: number[]) {
   return (ids ?? []).join(',')
 }
@@ -110,8 +120,6 @@ watch(
     if (Object.keys(rowErrors.value).length) validate()
   },
 )
-
-
 
 onMounted(async () => {
   await productGroupStore.fetchAll?.()
