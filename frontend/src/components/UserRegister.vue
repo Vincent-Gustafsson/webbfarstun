@@ -73,8 +73,8 @@ watch(
   (now, prev) => {
     if (prev && !now && submitted.value) {
       if (!props.generalError && !hasServerFieldErrors.value) resetForm()
-      submitted.value = false
     }
+    submitted.value = false
   },
 )
 </script>
