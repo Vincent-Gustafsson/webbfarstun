@@ -26,7 +26,7 @@ function clearError() {
       :server-field-errors="productStore.fieldErrors"
       @clear-error="clearError"
       @create="productStore.create"
-      @cancel="$router.push('/')"
+      @cancel="$router.push('/admin')"
     >
       <template #options>
         <div class="divider my-2"></div>

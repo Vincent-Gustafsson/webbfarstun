@@ -20,7 +20,7 @@ function clearCategoryError() {
       :created-category-id="categoryStore.createdId"
       @clear-error="clearCategoryError"
       @create="categoryStore.create"
-      @cancel="$router.push('/')"
+      @cancel="$router.push('/admin')"
     />
 
     <CategoryVariationsEditor :category-id="categoryStore.createdId" />

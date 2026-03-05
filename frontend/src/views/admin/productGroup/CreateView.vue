@@ -18,7 +18,7 @@ function clearError() {
       :server-field-errors="productGroupStore.fieldErrors"
       @clear-error="clearError"
       @create="productGroupStore.create"
-      @cancel="$router.push('/')"
+      @cancel="$router.push('/admin')"
     />
   </main>
 </template>
