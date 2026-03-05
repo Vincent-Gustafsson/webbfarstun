@@ -25,4 +25,8 @@ export default {
   async clearCart() {
     return http.delete<void>('/cart/')
   },
+
+  async checkout() {
+    return http.post<void>('/cart/checkout', {})
+  },
 }

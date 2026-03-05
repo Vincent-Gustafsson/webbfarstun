@@ -3,7 +3,7 @@ import { onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useProductStore } from '@/stores/products'
 import { useCartStore } from '@/stores/cart'
-import { useUserStore } from '@/stores/user'
+import { useAddToCart } from '@/composables/useAddToCart'
 
 import ProductInformation from '@/components/ProductInformation.vue'
 import ProductReviews from '@/components/ProductReviews.vue'
@@ -13,23 +13,9 @@ import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 
-const users = useUserStore()
-
 const props = defineProps<{ id: string }>()
 const productStore = useProductStore()
 const { activeProduct, loading, error, availability } = storeToRefs(productStore)
-
-const cartStore = useCartStore()
-async function handleAddToCart() {
-  if (!activeProduct.value || !isCompleteSelection()) return
-
-  try {
-    await cartStore.addToCart({
-      product_id: activeProduct.value.id,
-      qty: 1, // You could also add a 'quantity' ref to the UI if needed
-    })
-  } catch (err) {}
-}
 
 // local selection: variation_id -> option_id|null
 const selectedByVariation = ref<Record<number, number | null>>({})
@@ -93,6 +79,11 @@ async function load() {
   if (!Number.isFinite(id)) return
   await productStore.fetchOne(id)
 }
+
+const { tooltipString, isButtonDisabled, handleAdd } = useAddToCart(
+  () => activeProduct.value?.id,
+  isCompleteSelection,
+)
 
 onMounted(load)
 watch(() => props.id, load)
@@ -159,15 +150,8 @@ watch(
       <h2 class="text-4xl text-center">{{ activeProduct.price }} kr</h2>
       <div class="divider"></div>
 
-      <div
-        class="tooltip"
-        :data-tip="users.isLoggedIn ? '' : 'You must be logged in to write a review'"
-      >
-        <button
-          class="btn btn-accent w-full"
-          :disabled="!isCompleteSelection() || !users.isLoggedIn"
-          @click="handleAddToCart"
-        >
+      <div class="tooltip" :data-tip="tooltipString">
+        <button class="btn btn-accent w-full" :disabled="isButtonDisabled" @click="handleAdd">
           Add to cart
         </button>
       </div>

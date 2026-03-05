@@ -38,7 +38,7 @@ onActivated(load)
       <figure>
         <img
           v-if="productImageUrl(p.default_image)"
-          :src="productImageUrl(p.default_image)!"
+          :src="productImageUrl(p.default_image)"
           alt=""
         />
         <div v-else class="h-48 w-full bg-base-200 rounded"></div>

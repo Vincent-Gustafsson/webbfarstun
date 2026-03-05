@@ -14,9 +14,10 @@ import type {
   ResolveResponse,
 } from '../types/variant'
 
-export const productImageUrl = (productImageId: number) => {
-  if (!productImageId) return null
-  return `/api/product-images/${productImageId}/file`
+export const productImageUrl = (productImageId?: number | string | null) => {
+  const imageId = Number(productImageId)
+  if (!Number.isFinite(imageId) || imageId <= 0) return ''
+  return `/api/product-images/${imageId}/file`
 }
 
 export default {

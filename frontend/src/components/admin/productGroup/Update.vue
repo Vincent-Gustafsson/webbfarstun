@@ -4,7 +4,7 @@ import { reactive, ref, watch, onMounted, nextTick } from 'vue'
 import { useProductGroupStore } from '@/stores/admin/productGroup'
 import { useCategoryStore } from '@/stores/admin/category'
 import ProductGroupVariationsPicker from '@/components/admin/productGroup/Create.vue'
-
+import type { ProductGroupUpdate } from '@/types/admin/productGroup.ts'
 const props = defineProps<{
   id: number
   submitting?: boolean

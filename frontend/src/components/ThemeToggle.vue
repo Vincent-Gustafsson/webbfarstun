@@ -3,7 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import { themeChange } from 'theme-change'
 
 const LIGHT = 'nord'
-const DARK = 'business'
+const DARK = 'sunset'
 
 const theme = ref<string>(LIGHT)
 const isDark = computed(() => theme.value === DARK)

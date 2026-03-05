@@ -42,7 +42,13 @@ onMounted(() => {
     <div class="navbar mx-auto px-4 gap-3">
       <!-- Left -->
       <div class="flex-none">
-        <RouterLink to="/" class="btn btn-ghost text-xl">Webbfarstun</RouterLink>
+        <RouterLink to="/" class="btn btn-ghost text-xl"
+          ><img
+            src="/favicon_3.png"
+            alt="Webbfarstun Logo"
+            class="w-18 h-18"
+          />Webbfarstun</RouterLink
+        >
       </div>
 
       <!-- Middle (THIS must be flex-1, not navbar-center) -->

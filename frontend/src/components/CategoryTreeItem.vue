@@ -28,7 +28,7 @@ const toCategory = computed(() => ({
 <template>
   <li>
     <details v-if="node.children.length" :open="shouldOpen">
-      <summary class="gap-2" :class="{ active: isActive }">
+      <summary class="gap-2" :class="{ 'text-primary': isActive }">
         <RouterLink :to="toCategory" class="flex-1" @click.stop>
           {{ node.name }}
         </RouterLink>
@@ -44,14 +44,8 @@ const toCategory = computed(() => ({
       </ul>
     </details>
 
-    <RouterLink v-else :to="toCategory" :class="{ active: isActive }">
+    <RouterLink v-else :to="toCategory" :class="{ 'text-primary': isActive }">
       {{ node.name }}
     </RouterLink>
   </li>
 </template>
-
-<style>
-.active {
-  color: red;
-}
-</style>

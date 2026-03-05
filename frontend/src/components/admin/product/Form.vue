@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, watch, computed, onMounted, ref } from 'vue'
-import type { ProductCreate } from '@/types/admin/product'
+import type { ProductCreate, ProductUpdate } from '@/types/admin/product'
 import { useProductGroupStore } from '@/stores/admin/productGroup'
 
 const props = defineProps<{
@@ -71,7 +71,7 @@ function validate() {
   if (!Number.isInteger(form.stock_qty) || form.stock_qty < 0)
     e.stock_qty = 'Stock must be an integer ≥ 0'
 
-  if (props.variationOptionIds.length > 0 && props.variationOptionIds.some((id) => id <= 0)) {
+  if (props.variationOptionIds!.length > 0 && props.variationOptionIds!.some((id) => id <= 0)) {
     e.options = 'Please select one option for each variation'
   }
 

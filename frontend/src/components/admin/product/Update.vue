@@ -4,9 +4,7 @@ import { useProductStore } from '@/stores/admin/product'
 
 import AdminCreateProductForm from '@/components/admin/product/Form.vue'
 
-
 const productStore = useProductStore()
-
 
 const product = computed(() => productStore.current)
 const loading = computed(() => productStore.loading)
@@ -15,9 +13,13 @@ const loading = computed(() => productStore.loading)
 <template>
   <div>
     <div v-if="loading">Loading...</div>
-
     <div v-else>
-      <AdminCreateProductForm mode="update" :product="product" />
+      <AdminCreateProductForm
+        mode="update"
+        :product="product"
+        :productGroupId="product?.productGroupId"
+        :variationOptionIds="product?.variationOptionIds"
+      />
     </div>
   </div>
 </template>

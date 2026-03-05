@@ -75,7 +75,7 @@ async function uploadAll() {
   let newDefaultImageId: number | null = null
 
   for (let i = 0; i < picked.value.length; i++) {
-    const p = picked.value[i]
+    const p = picked.value[i]!
     if (p.status === 'done') continue
 
     p.status = 'uploading'
@@ -121,10 +121,11 @@ onMounted(refresh)
 
 async function makeDefault(imageId: number) {
   const updated = await imageStore.setDefault(props.productId, imageId)
+  if (!updated?.id) return
 
-  if (productStore.current?.id === props.productId) productStore.current.default_image = updated
+  if (productStore.current?.id === props.productId) productStore.current.default_image = updated.id
   const listItem = productStore.products.find((p) => p.id === props.productId)
-  if (listItem) listItem.default_image = updated
+  if (listItem) listItem.default_image = updated.id
 }
 
 async function deleteExisting(imageId: number) {

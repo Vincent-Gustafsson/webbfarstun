@@ -1,5 +1,6 @@
 export interface ShoppingCartItemPublic {
   id: number
+  product_id: number
   name: string
   image_id: number | null
   price: number

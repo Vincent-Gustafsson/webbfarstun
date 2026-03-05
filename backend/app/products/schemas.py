@@ -299,6 +299,7 @@ class ShoppingCartItemPublic(SQLModel):
     stock_qty: int
     cart_qty: int
     id: int
+    product_id: int
 
 
 class ShoppingCartPublic(SQLModel):

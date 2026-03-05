@@ -56,6 +56,7 @@ def build_cart_public(session: Session, cart: ShoppingCart) -> ShoppingCartPubli
         cart_items.append(
             ShoppingCartItemPublic(
                 id=item.id,
+                product_id=item.product.id,
                 name=item.product.name,
                 image_id=(image.id if image else None),
                 price=item.product.price,
@@ -200,6 +201,44 @@ def delete_cart_items(
     current_user: User = Depends(get_current_user),
 ):
     cart = get_or_create_cart(session, current_user.id)
+    session.exec(
+        delete(ShoppingCartItem).where(ShoppingCartItem.shopping_cart_id == cart.id)
+    )
+    session.commit()
+    return None
+
+
+@router.post("/checkout", status_code=status.HTTP_201_CREATED)
+def check_out(
+    *,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    cart = get_or_create_cart(session, current_user.id)
+
+    if not cart.items:
+        raise HTTPException(
+            status_code=400,
+            detail={"errors": {"cart": "Shopping cart is empty"}},
+        )
+
+    stock_errors: dict[int, str] = {}
+    for item in cart.items:
+        if item.qty > item.product.stock_qty:
+            stock_errors[item.product_id] = (
+                f"Only {item.product.stock_qty} item(s) left in stock"
+            )
+
+    if stock_errors:
+        raise HTTPException(
+            status_code=409,
+            detail={"errors": {"stock": stock_errors}},
+        )
+
+    for item in cart.items:
+        item.product.stock_qty -= item.qty
+        session.add(item.product)
+
     session.exec(
         delete(ShoppingCartItem).where(ShoppingCartItem.shopping_cart_id == cart.id)
     )
