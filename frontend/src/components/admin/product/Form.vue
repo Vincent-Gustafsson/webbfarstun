@@ -88,6 +88,8 @@ function onSubmit() {
 
   if (!validate()) return
 
+  submitted.value = true
+
   const optionIds = (props.variationOptionIds ?? []).filter((id) => id > 0)
 
   if (props.mode === 'update') {
@@ -116,6 +118,15 @@ function onSubmit() {
 }
 
 watch(
+  () => props.submitting,
+  (now, prev) => {
+    if (prev && !now && submitted.value) {
+      if (!props.generalError && !hasServerFieldErrors.value) resetForm()
+      submitted.value = false
+    }
+  },
+)
+watch(
   () => props.productGroupId,
   (v) => {
     if (props.mode === 'create' && typeof v === 'number') {
@@ -129,16 +140,6 @@ watch(
   () => form.product_group_id,
   (v) => {
     emit('update:productGroupId', v)
-  },
-)
-
-watch(
-  () => props.submitting,
-  (now, prev) => {
-    if (prev && !now && submitted.value) {
-      if (!props.generalError && !hasServerFieldErrors.value) resetForm()
-      submitted.value = false
-    }
   },
 )
 
