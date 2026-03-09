@@ -3,6 +3,10 @@ import { ref, onMounted } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import { productImageUrl } from '@/services/products.ts'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
 const users = useUserStore()
 const cartStore = useCartStore()
 const isCartOpen = ref(false)
@@ -16,6 +20,8 @@ onMounted(() => {
 
 const handleCheckout = async () => {
   await cartStore.checkout()
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  router.push('/order')
 }
 
 const getProductRoute = (productId: number) => ({

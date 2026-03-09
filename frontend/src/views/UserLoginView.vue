@@ -2,7 +2,7 @@
 import UserLogin from '@/components/UserLogin.vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
-import { computed, watch } from 'vue'
+import { computed, watch, ref } from 'vue'
 import { useRoute } from 'vue-router'
 const store = useUserStore()
 const router = useRouter()
@@ -11,9 +11,29 @@ const route = useRoute()
 const isLoggedIn = computed(() => store.isLoggedIn)
 const showSuccessMessage = computed(() => route.query.registered === 'true')
 
+const isSubmitting = ref(false)
+const errorMessage = ref<string | null>(null)
+
 watch(isLoggedIn, (now) => {
   if (now) router.replace('/')
 })
+
+const handleLogin = async (payload: any) => {
+  isSubmitting.value = true
+  errorMessage.value = null
+
+  try {
+    await store.login(payload)
+  } catch (error: any) {
+    if (error?.response?.status === 401 || error?.message === 'Validation error') {
+      errorMessage.value = 'Invalid credentials. Please try again.'
+    } else {
+      errorMessage.value = 'An unexpected error occurred.'
+    }
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -37,7 +57,10 @@ watch(isLoggedIn, (now) => {
       </div>
       <UserLogin
         :serverFieldErrors="store.fieldErrors"
-        @login="store.login"
+        :general-error="errorMessage"
+        :submitting="isSubmitting"
+        @login="handleLogin"
+        @clear-error="errorMessage = null"
         @cancel="$router.push('/')"
       />
     </div>

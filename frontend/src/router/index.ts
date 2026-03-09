@@ -16,6 +16,8 @@ import AdminProductListView from '@/views/admin/product/ListView.vue'
 import AdminProductUpdateView from '@/views/admin/product/UpdateView.vue'
 import AdminProductGroupListView from '@/views/admin/productGroup/ListView.vue'
 import AdminProductGroupUpdateView from '@/views/admin/productGroup/UpdateView.vue'
+import OrderView from '@/views/OrderView.vue'
+
 import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
@@ -34,6 +36,11 @@ const router = createRouter({
           path: 'categories/:category_id',
           name: 'categories',
           component: CategoryView,
+        },
+        {
+          path: 'order',
+          name: 'order',
+          component: OrderView,
         },
         {
           path: '/products/:id',

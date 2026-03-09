@@ -64,6 +64,7 @@ export const useUserStore = defineStore('user', {
           this.error = err?.message ?? 'Failed to create user'
           this.fieldErrors = {}
         }
+        throw err
       } finally {
         this.loading = false
       }
@@ -97,6 +98,7 @@ export const useUserStore = defineStore('user', {
         this.error = getErrorMessage(err)
         this.me = null
         console.error(err)
+        throw err
       } finally {
         this.loading = false
         this.authChecked = true

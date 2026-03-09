@@ -30,12 +30,21 @@ const hasServerFieldErrors = computed(
 
 function validate() {
   const e: typeof clientFieldErrors.value = {}
-  if (form.name.trim().length < 3) e.name = 'Name must be at least 3 characters'
-  if (!form.email.trim()) e.email = 'Email is required'
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Email is not valid'
 
-  if (form.email.trim().length < 3) e.email = 'Email must be at least 3 characters'
-  if (form.password.trim().length < 3) e.password = 'Password must be at least 3 characters'
+  if (form.name.trim().length < 3) e.name = 'Name must be at least 3 characters'
+
+  if (!form.email.trim()) {
+    e.email = 'Email is required'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+    e.email = 'Email is not valid'
+  }
+
+  const pwd = form.password.trim()
+  if (pwd.length < 8) {
+    e.password = 'Must be at least 8 characters'
+  } else if (!/(?=.*\d)(?=.*[a-z])(?=.*[A-Z])/.test(pwd)) {
+    e.password = 'Must include number, lowercase and uppercase letter'
+  }
 
   clientFieldErrors.value = e
   return Object.keys(e).length === 0
@@ -169,36 +178,23 @@ watch(
           <label class="label">
             <span class="label-text">Password</span>
           </label>
-          <label class="input validator">
-            <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <g
-                stroke-linejoin="round"
-                stroke-linecap="round"
-                stroke-width="2.5"
-                fill="none"
-                stroke="currentColor"
-              >
-                <path
-                  d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
-                ></path>
-                <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle>
-              </g>
-            </svg>
-            <input
-              v-model="form.password"
-              type="password"
-              required
-              placeholder="Password"
-              minlength="8"
-              pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-              title="Must be more than 8 characters, including number, lowercase letter, uppercase letter"
-            />
+          <label
+            class="input input-bordered flex items-center gap-2"
+            :class="clientFieldErrors.password || serverFieldErrors?.password ? 'input-error' : ''"
+          >
+            <svg
+              class="h-[1em] opacity-50"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+            ></svg>
+            <input v-model="form.password" type="password" placeholder="Password" class="grow" />
           </label>
-          <p class="validator-hint hidden">
-            Must be more than 8 characters, including
-            <br />At least one number <br />At least one lowercase letter <br />At least one
-            uppercase letter
-          </p>
+
+          <label v-if="clientFieldErrors.password || serverFieldErrors?.password" class="label">
+            <span class="label-text-alt text-error">
+              {{ clientFieldErrors.password || serverFieldErrors?.password }}
+            </span>
+          </label>
         </div>
         <RouterLink to="/account/login" class="link link-primary text-center">
           Already have an account? Sign in
