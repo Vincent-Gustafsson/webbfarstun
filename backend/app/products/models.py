@@ -6,6 +6,7 @@ from sqlmodel import Field, Index, Relationship, SQLModel, UniqueConstraint, tex
 from .schemas import (
     ActionBase,
     CategoryBase,
+    OrderBase,
     ProductBase,
     ProductConfigBase,
     ProductGroupBase,
@@ -71,6 +72,7 @@ class Product(ProductBase, table=True):
     shopping_cart_items: list["ShoppingCartItem"] = Relationship(
         back_populates="product"
     )
+    orders: list["Order"] = Relationship(back_populates="product")
     variation_options: list["VariationOption"] = Relationship(
         back_populates="products", link_model=ProductConfig
     )
@@ -190,6 +192,7 @@ class User(UserBase, table=True):
     actions: list["Action"] = Relationship(back_populates="user")
     reviews: list["Review"] = Relationship(back_populates="user")
     shopping_cart: Optional["ShoppingCart"] = Relationship(back_populates="user")
+    orders: list["Order"] = Relationship(back_populates="user")
 
 
 class Action(ActionBase, table=True):
@@ -237,3 +240,27 @@ class ShoppingCartItem(ShoppingCartItemBase, table=True):
     shopping_cart_id: int = Field(foreign_key="shoppingcart.id")
     product: "Product" = Relationship(back_populates="shopping_cart_items")
     shopping_cart: "ShoppingCart" = Relationship(back_populates="items")
+
+
+class Order(OrderBase, table=True):
+    __tablename__ = "orders"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("user.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
+    product_id: int | None = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey("product.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
+    )
+
+    user: "User" = Relationship(back_populates="orders")
+    product: Optional["Product"] = Relationship(back_populates="orders")

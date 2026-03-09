@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from .db import create_db_and_tables
 from .products.api.action import router as action_router
 from .products.api.category import router as category_router
+from .products.api.order import router as order_router
 from .products.api.product import router as products_router
 from .products.api.product_group import router as product_group_router
 from .products.api.product_image import router as product_image_router
@@ -62,6 +63,7 @@ app.include_router(review_router)
 app.include_router(product_reviews_router)
 app.include_router(shopping_cart_router)
 app.include_router(shopping_cart_item_router)
+app.include_router(order_router)
 
 
 @app.get("/")

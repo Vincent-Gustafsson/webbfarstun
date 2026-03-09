@@ -1,11 +1,12 @@
 from app.auth.deps import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, delete, select
 
 from ...db import get_session
-from ..models import Product, ProductImage, ShoppingCart, ShoppingCartItem, User
+from ..models import Order, Product, ProductImage, ShoppingCart, ShoppingCartItem, User
 from ..schemas import (
     ShoppingCartItemCreateInCart,
     ShoppingCartItemPublic,
@@ -223,10 +224,20 @@ def check_out(
         )
 
     stock_errors: dict[int, str] = {}
+    locked_products: dict[int, Product] = {}
     for item in cart.items:
-        if item.qty > item.product.stock_qty:
+        product = session.exec(
+            select(Product).where(Product.id == item.product_id).with_for_update()
+        ).first()
+        if product is None:
+            stock_errors[item.product_id] = "Product not found"
+            continue
+
+        locked_products[item.product_id] = product
+
+        if item.qty > product.stock_qty:
             stock_errors[item.product_id] = (
-                f"Only {item.product.stock_qty} item(s) left in stock"
+                f"Only {product.stock_qty} item(s) left in stock"
             )
 
     if stock_errors:
@@ -235,12 +246,38 @@ def check_out(
             detail={"errors": {"stock": stock_errors}},
         )
 
+    product_ids = [item.product_id for item in cart.items]
+    default_images = session.exec(
+        select(ProductImage).where(
+            ProductImage.product_id.in_(product_ids),
+            ProductImage.is_default,
+        )
+    ).all()
+    default_image_by_product_id = {img.product_id: img.id for img in default_images}
+    order_nr = int(session.exec(text("SELECT nextval('orders_order_nr_seq')")).one()[0])
+
     for item in cart.items:
-        item.product.stock_qty -= item.qty
-        session.add(item.product)
+        product = locked_products[item.product_id]
+        unit_price = product.price
+
+        order_item = Order(
+            order_nr=order_nr,
+            user_id=current_user.id,
+            product_id=product.id,
+            qty=item.qty,
+            unit_price=unit_price,
+            line_total=unit_price * item.qty,
+            product_name=product.name,
+            product_sku=product.sku,
+            default_image=default_image_by_product_id.get(product.id),
+        )
+        session.add(order_item)
+
+        product.stock_qty -= item.qty
+        session.add(product)
 
     session.exec(
         delete(ShoppingCartItem).where(ShoppingCartItem.shopping_cart_id == cart.id)
     )
     session.commit()
-    return None
+    return {"purchased_items": len(cart.items)}

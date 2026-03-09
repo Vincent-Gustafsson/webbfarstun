@@ -306,6 +306,23 @@ class ShoppingCartPublic(SQLModel):
     items: list[ShoppingCartItemPublic]
 
 
+class OrderBase(SQLModel):
+    order_nr: int | None = None
+    qty: int
+    unit_price: int
+    line_total: int
+    product_name: str
+    product_sku: str | None = None
+    default_image: int | None = None
+    purchased_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class OrderPublic(OrderBase):
+    id: int
+    user_id: int
+    product_id: int | None = None
+
+
 class TokenOut(SQLModel):
     access_token: str
     token_type: str = "bearer"

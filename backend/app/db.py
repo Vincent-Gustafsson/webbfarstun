@@ -1,5 +1,6 @@
 import os
 
+from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
 
 from .products import models
@@ -24,7 +25,24 @@ def get_engine():
 
 
 def create_db_and_tables():
-    SQLModel.metadata.create_all(get_engine())
+    engine = get_engine()
+    SQLModel.metadata.create_all(engine)
+
+    # Lightweight schema patch for existing databases:
+    # older deployments may already have "orders" without this newer snapshot field.
+    with engine.begin() as conn:
+        conn.execute(text("CREATE SEQUENCE IF NOT EXISTS orders_order_nr_seq"))
+        conn.execute(
+            text(
+                "ALTER TABLE IF EXISTS orders ADD COLUMN IF NOT EXISTS order_nr BIGINT"
+            )
+        )
+        conn.execute(
+            text(
+                "ALTER TABLE IF EXISTS orders "
+                "ADD COLUMN IF NOT EXISTS default_image INTEGER"
+            )
+        )
 
 
 def get_session():
