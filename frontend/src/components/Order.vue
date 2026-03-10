@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { Order } from '@/types/order'
 import { productImageUrl } from '@/services/products.ts'
 
@@ -11,6 +11,12 @@ const props = defineProps<{
     items: Order[]
   }
 }>()
+
+const brokenImages = ref(new Set<string | number>())
+
+function handleImageError(itemId: string | number) {
+  brokenImages.value.add(itemId)
+}
 
 const formattedDate = computed(() => {
   if (!props.orderGroup.purchased_at) return 'Okänt datum'
@@ -59,10 +65,17 @@ const formattedDate = computed(() => {
         class="flex flex-col sm:flex-row items-center justify-between p-4 border-b border-base-200 last:border-b-0 hover:bg-base-50 transition-colors w-full"
       >
         <div class="flex items-center gap-6 w-full sm:w-auto">
+          <div
+            v-if="!item.default_image || brokenImages.has(item.id)"
+            class="w-24 h-24 bg-base-300 rounded-md shrink-0"
+          ></div>
+
           <img
+            v-else
             :src="productImageUrl(item.default_image)"
             :alt="item.product_name"
-            class="w-24 object-contain"
+            @error="handleImageError(item.id)"
+            class="w-24 h-24 object-contain shrink-0"
           />
           <div class="flex flex-col">
             <h3 class="font-bold text-base-content text-[15px]">{{ item.product_name }}</h3>
