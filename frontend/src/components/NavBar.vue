@@ -82,7 +82,9 @@ onMounted(() => {
         <button v-else class="btn btn-ghost whitespace-nowrap" type="button" @click="logout">
           Logout
         </button>
-
+        <RouterLink v-if="isLoggedIn" to="/order" class="btn btn-ghost whitespace-nowrap">
+          Orders
+        </RouterLink>
         <ShoppingCart />
       </div>
     </div>
