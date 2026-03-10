@@ -263,12 +263,10 @@ def check_out(
         order_item = Order(
             order_nr=order_nr,
             user_id=current_user.id,
-            product_id=product.id,
             qty=item.qty,
             unit_price=unit_price,
             line_total=unit_price * item.qty,
             product_name=product.name,
-            product_sku=product.sku,
             default_image=default_image_by_product_id.get(product.id),
         )
         session.add(order_item)

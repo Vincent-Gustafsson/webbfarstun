@@ -43,6 +43,12 @@ def create_db_and_tables():
                 "ADD COLUMN IF NOT EXISTS default_image INTEGER"
             )
         )
+        conn.execute(
+            text("ALTER TABLE IF EXISTS orders DROP COLUMN IF EXISTS product_id")
+        )
+        conn.execute(
+            text("ALTER TABLE IF EXISTS orders DROP COLUMN IF EXISTS product_sku")
+        )
 
 
 def get_session():

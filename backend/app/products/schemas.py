@@ -312,7 +312,6 @@ class OrderBase(SQLModel):
     unit_price: int
     line_total: int
     product_name: str
-    product_sku: str | None = None
     default_image: int | None = None
     purchased_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -320,7 +319,6 @@ class OrderBase(SQLModel):
 class OrderPublic(OrderBase):
     id: int
     user_id: int
-    product_id: int | None = None
 
 
 class TokenOut(SQLModel):

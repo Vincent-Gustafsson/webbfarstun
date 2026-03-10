@@ -72,7 +72,6 @@ class Product(ProductBase, table=True):
     shopping_cart_items: list["ShoppingCartItem"] = Relationship(
         back_populates="product"
     )
-    orders: list["Order"] = Relationship(back_populates="product")
     variation_options: list["VariationOption"] = Relationship(
         back_populates="products", link_model=ProductConfig
     )
@@ -253,14 +252,5 @@ class Order(OrderBase, table=True):
             nullable=False,
         )
     )
-    product_id: int | None = Field(
-        default=None,
-        sa_column=Column(
-            Integer,
-            ForeignKey("product.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-    )
 
     user: "User" = Relationship(back_populates="orders")
-    product: Optional["Product"] = Relationship(back_populates="orders")
